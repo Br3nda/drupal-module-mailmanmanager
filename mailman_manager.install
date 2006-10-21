@@ -1,7 +1,7 @@
 <?php
-// nodereference.install
+// mailman_manager.install
 
-function nodereference_install() {
+function mailman_manager_install() {
   switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
