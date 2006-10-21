@@ -1,16 +1,33 @@
-CREATE TABLE `mailman_lists` (
-  `lid` tinyint(3) unsigned NOT NULL auto_increment,
-  `name` varchar(48) NOT NULL default '',
-  `command` varchar(72) NOT NULL default '',
-  `admin` varchar(48) NOT NULL default '',
-  PRIMARY KEY  (`lid`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
+<?php
+// nodereference.install
 
-CREATE TABLE `mailman_users` (
-  `uid` int(10) NOT NULL default '0',
-  `lid` int(10) NOT NULL default '0',
-  `lstatus` int(10) NOT NULL default '0',
-  `lmail` varchar(36) NOT NULL default '',
-  `lpass` varchar(36) NOT NULL default '',
-  PRIMARY KEY  (`uid`,`lid`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+function nodereference_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+	db_query("CREATE TABLE `mailman_lists` (
+		`lid` tinyint(3) unsigned NOT NULL auto_increment,
+  		`name` varchar(48) NOT NULL default '',
+  		`command` varchar(72) NOT NULL default '',
+		`admin` varchar(48) NOT NULL default '',
+  		PRIMARY KEY  (`lid`)
+	)");
+
+	db_query("CREATE TABLE `mailman_users` (
+  		`uid` int(10) NOT NULL default '0',
+  		`lid` int(10) NOT NULL default '0',
+  		`lstatus` int(10) NOT NULL default '0',
+		`lmail` varchar(36) NOT NULL default '',
+  		`lpass` varchar(36) NOT NULL default '',
+		PRIMARY KEY  (`uid`,`lid`)
+	)");
+    break;
+ 
+    case 'pgsql':
+
+      // Pgsql requires keys and indexes to be defined separately.
+      // It's important to name the index as {tablename}_fieldname_idx
+      // (the trailing _idx!) so update scripts can be written easily
+  }
+}
+?>
