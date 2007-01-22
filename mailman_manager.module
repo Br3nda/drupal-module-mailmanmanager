@@ -203,14 +203,14 @@ function mailman_manager_user($op, &$edit, &$account, $category=NULL) {
  * Menu callback; displays the mailing list overview/editing page.
  */
 function mailman_manager_admin() {
-  $edit = $_POST['edit'];
-  $op = $_POST['op'];
+  $edit = $_POST;
+  $op = $edit['op'];
 
   if ($op == t('Add list')) {
-    drupal_set_message(_mailman_manager_admin_save($edit));
+	drupal_set_message(_mailman_manager_admin_save($edit));
   }
   else if ($op == t('Delete checked lists')) {
-    drupal_set_message(_mailman_manager_admin_delete($edit));
+	drupal_set_message(_mailman_manager_admin_delete($edit));
   }
   print theme('page', _mailman_manager_admin_display());
 }
@@ -229,14 +229,21 @@ function _mailman_manager_admin_display() {
 	$output .= '<th width = 30%>Name</th>';
 	$output .= '<th width = 50%>Request Address</th>';
 	$output .= '<th width = 10%>Delete?</th></tr>';
-    foreach ($lists as $list) {
-		$form['del'.$list[lid]] = array(
-			'#prefix' => '<tr><td>'.$list[lid].'</td><td>'.$list[name].'</td><td>'.$list[command].'</td><td>',
-			'#type' => 'checkbox',
-			'#default_value' => 0,
-			'#suffix' => '</td></tr>'
-		);
-	}
+    $output .= drupal_get_form('mailman_manager_edit_lists_form',$lists);
+  }
+  $output .= '</tr></table></div>';
+  $output .= drupal_get_form('mailman_manager_add_list_form');
+  return $output;  
+}
+
+function mailman_manager_edit_lists_form($lists) {
+  foreach ($lists as $list) {
+    $form['del'.$list[lid]] = array(
+	  '#prefix' => '<tr><td>'.$list[lid].'</td><td>'.$list[name].'</td><td>'.$list[command].'</td><td>',
+	  '#type' => 'checkbox',
+	  '#default_value' => 0,
+      '#suffix' => '</td></tr>'
+	);
   }
   $form['Submit'] = array(
     '#prefix' => '<tr><td colspan=4>',
@@ -244,44 +251,46 @@ function _mailman_manager_admin_display() {
 	'#value' => 'Delete checked lists',
 	'#suffix' => '</td></tr>'
   );
-  $output2 = '</tr></table></div>';
-  $form2['mailman_manager_add_name'] = array (
+  return $form;
+}
+
+function mailman_manager_add_list_form() {
+  $form['add_name'] = array (
   	'#title' => 'Enter list name',
   	'#type' => 'textfield',
   );
-  $form2['mailman_manager_add_reqaddress'] = array (
+  $form['reqaddress'] = array (
   	'#title' => 'Enter list \'request\' address (commands are sent here)',
   	'#type' => 'textfield',
   );
-  $form2['mailman_manager_add_adminaddress'] = array (
+  $form['adminaddress'] = array (
   	'#title' => 'Enter list \'admin\' address (Optional. admin is used for BCC)',
   	'#type' => 'textfield',
   );
-  $form2['mailman_manager_add_webaddress'] = array (
+  $form['webaddress'] = array (
   	'#title' => 'Enter list web address for users (http://...). Leave empty if hidden.',
   	'#type' => 'textfield',
   );
-  $form2['mailman_manager_add_webarchive'] = array (
+  $form['webarchive'] = array (
   	'#title' => 'Enter list web archive address for users (http://...). Leave empty if hidden.',
   	'#type' => 'textfield',
   );
-  $form2['Submit'] = array (
+  $form['Submit'] = array (
   	'#type' => 'submit',
 	'#value' => 'Add list',
   );
-  return $output.drupal_get_form('Administer Mailing Lists',$form).$output2.
-  	drupal_get_form('Add Mailing List',$form2);  
+  return $form;
 }
 
 /**
  * Save new mailing list.
  */
 function _mailman_manager_admin_save($edit) {
-  $name = trim($edit['mailman_manager_add_name']);
-  $command = trim($edit['mailman_manager_add_reqaddress']);
-  $admin = trim($edit['mailman_manager_add_adminaddress']);  
-  $web = trim($edit['mailman_manager_add_webaddress']);  
-  $webarch = trim($edit['mailman_manager_add_webarchive']);  
+  $name = trim($edit['add_name']);
+  $command = trim($edit['reqaddress']);
+  $admin = trim($edit['adminaddress']);  
+  $web = trim($edit['webaddress']);  
+  $webarch = trim($edit['webarchive']);  
   $query = "INSERT INTO {mailman_lists} (name,command,admin,web,webarch) VALUES ('%s', '%s', '%s', '%s', '%s')";
   if (db_query($query,$name,$command,$admin,$web,$webarch)){
     $watchdog = 'New Mailman list '.$name.' successfully created';
