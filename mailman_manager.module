@@ -17,7 +17,7 @@ function mailman_manager_help($section) {
       return t('Utilities related to Mailman manager, subscription system and database for Mailman mailing lists.');
       break;
     case 'admin/help#mailman_manager':
-      return '<p>'. t('Utilities related to Mailman manager, subscription system and database for Mailman mailing lists.').'</p>'.'<p>'. t('This tool works using the mailman email interface. All commands sent by this module are also BCC\'ed to the list admin. One can optionally specify the web interface and/or the web archive of each list. The module can not know if a user is previously subscribed but allows the user to specify a password which can then be used to hook into an existing account. This module currently only works with Drupal MySQL installations.').'</p>';
+      return t('<p>Utilities related to Mailman manager, subscription system and database for Mailman mailing lists.</p><p>This tool works using the mailman email interface. All commands sent by this module are also BCC\'ed to the list admin. One can optionally specify the web interface and/or the web archive of each list. The module can not know if a user is previously subscribed but allows the user to specify a password which can then be used to hook into an existing account.</p>');
       break;
   }
 }
@@ -30,7 +30,7 @@ function mailman_manager_link($type, $node = NULL, $teaser = FALSE) {
 
   if ($type == 'page' && user_access('access content')) {
 //    $links[] = l(t('mailing %list', array('%list' => format_plural(_mailman_manager_get_count(), 'list', 'lists'))), 'mailman_manager', array('title' => t('Subscribe to mailing %list', array('%list' => format_plural(_mailman_manager_get_count(), 'list', 'lists')))));
-    $links[] = l(t('mailing lists'), 'mailman_manager', array('title' => t('Subscribe to mailing lists')));
+    $links[] = l(t('Mailing Lists'), 'mailman_manager', array('title' => t('Subscribe to mailing lists')));
   }
 
   return $links;
@@ -51,14 +51,15 @@ function mailman_manager_menu($may_cache) {
 
   if ($may_cache) {
     $items[] = array('path' => 'mailman_manager',
-      'title' => ('mailing lists'),
+      'title' => ('Mailing Lists'),
       'callback' => 'mailman_manager_page',
       'access' => user_access('access mailman_manager'),
       'type' => MENU_NORMAL_ITEM);
 
-    $items[] = array('path' => 'admin/mailman_manager',
-      'title' => t('mailing lists'),
+    $items[] = array('path' => 'admin/settings/mailman_manager',
+      'title' => t('Mailing Lists'),
       'access' => user_access('administer mailman_manager'),
+	  'description' => t('Allow users to subscribe and change their subscriptions to Mailman mailing lists.'),
       'callback' => 'mailman_manager_admin',
       'type' => MENU_NORMAL_ITEM);
   }
@@ -85,80 +86,83 @@ function mailman_manager_page() {
 * in sn_subscriptions so that the user's subscription status is known
 * when he logs in.
 */
-function mailman_manager_user($op, &$edit, &$account, $category=NULL) {
+function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
   //Create menu option on user tab;
     case 'categories':
-      $output_user[] = array('name' => 'mailman_manager', 'title' => t('mailing lists'), 'weight' => 9);
+      $output_user[] = array('name' => 'mailman_manager', 'title' => t('Mailing Lists'), 'weight' => 9);
     return $output_user;
     break;
 
   //List mailing lists with user subscriptions and options;
     case 'form':
-    if ($category=='mailman_manager' && user_access('access mailman_manager')){
+    if ($category == 'mailman_manager' && user_access('access mailman_manager')) {
     $output = '<div class="mailman_manager">';
-    $output .='<p>'.t('The following email address will be subscribed to the email lists:');
-    $output .='<br><strong>'.$account->mail.'</strong>';
-    $output .=t('<p>If you would like to have a different email address subscribed, change your email address in the account settings tab.');
+    $output .= '<p>'.t('The following email address will be subscribed to the email lists:').'<br /><strong>'.$account->mail.'</strong></p>';
+
+    $output .= '<p>'.t('If you would like to have a different email address subscribed, change your email address in the account settings tab.').'</p>';
     $lists = _mailman_manager_get_lists();
 
-    $form['mman'] = array( '#type' => 'markup', '#value' => $output );
+    $form['mman'] = array('#type' => 'markup', '#value' => $output);
     if (count($lists) == 0) {
       $output = t('There are no lists available for subscription.');
-    } else {
+    } 
+	else {
 		$status = 0;
-		foreach ( $lists as $list){
-            $form['mman']['list'.trim($list[lid])] = array(
+		foreach ($lists as $list) {
+            $form['mman']['list'.trim($list['lid'])] = array(
                                                    '#type' => 'fieldset',
                                                    '#title' => $list['name'], 
                                                    '#collapsible' => TRUE
                                    );
 
-	        $subscrip=_mailman_manager_get_subscriptions($account->uid,$list[lid]);
+	        $subscrip = _mailman_manager_get_subscriptions($account->uid, $list['lid']);
 			if ($subscrip['lstatus'] == 0) {
 				$options = array('2' => t('Subscribe for digest (receive emails in a bundle)'),
                                  '3' => t('Subscribe for all Mail (normal delivery)'));
 				$status++;
-			} else {
+			} 
+			else {
 				$options = array('0' => t('Unsubscribe'),
                                  '1' => t('No mail (temporarily disable delivery)'),
                                  '2' => t('Subscribe for digest (receive emails in a bundle)'),
                                  '3' => t('Subscribe for all Mail (normal delivery)'),
                                  '4' => t('Mail password'));
 			}
-        	$subscrip=_mailman_manager_get_subscriptions($account->uid,$list[lid]);
-			$form['mman']['list'.trim($list[lid])]['options'.trim($list[lid])] = array (
+        	$subscrip = _mailman_manager_get_subscriptions($account->uid, $list['lid']);
+			$form['mman']['list'.trim($list['lid'])]['options'.trim($list['lid'])] = array(
 				'#type' => 'radios',
 				'#title' => t('Change your subscription:'),
 				'#options' => $options,
 				'#default_value' => $subscrip['lstatus']
 			);
 			if ($subscrip['lstatus'] == 0) {
-            $form['mman']['list'.trim($list[lid])]['pass'.trim($list[lid])] = array('#type' => 'textfield',
+            $form['mman']['list'.trim($list['lid'])]['pass'.trim($list['lid'])] = array('#type' => 'textfield',
                                                               '#title' => t('Password for '.$list['name'].' (optional)'),
                                                               '#size' => 15,
                                                               '#required' => FALSE,
                                                               '#default_value' => $subscrip['lpass']
                                                               );
             }
-            if ( $list[web] || $list[webarch] ) {
-                $link_output = t('Visit: ');
-                if ( $list[web] ) {
-                    $link_output .= l(t('Mailman Interface'), $list[web]);
+            if ($list['web'] || $list['webarch']) {
+                $link_output = '<p>'.t('Visit:').' ';
+                if ($list['web']) {
+                    $link_output .= l(t('Mailman Interface'), $list['web']);
                 }
-                if ( $list[web] && $list[webarch] )
-                    $link_output .= ' or: ';
-                if ( $list[webarch] ) {
-                    $link_output .= l( $list['name'] . t(' archive'), $list[webarch]);
+                if ($list['web'] && $list['webarch']) {
+                    $link_output .= ' '.t('or:').' ';
+				}
+                if ($list['webarch']) {
+                    $link_output .= l($list['name'].' '.t('archive'), $list['webarch']);
                 }
-                $form['mman']['list'.trim($list[lid])]['links'] = array( '#type' => 'markup', '#value' => $link_output );
+                $form['mman']['list'.trim($list['lid'])]['links'] = array('#type' => 'markup', '#value' => $link_output);
             }
 		}
 	}
-	if ($status != 0){
-		$output2 = '<p>'.t('Your current email address is not subscribed to ').$status.t(' list(s)!<p>');
+	if ($status != 0) {
+		$output2 = '<p>'.t('Your current email address is not subscribed to').' '.$status.' '.t('list(s).').'<p>';
 	} else {
-		$output2 = '<p>'.t('Your current email address is currently subscribed to all lists.<p>');
+		$output2 = '<p>'.t('Your current email address is currently subscribed to all lists.').'<p>';
     }
 	$output2 .= '</div>';
 	$form['lists']['subinfo'] = array( '#type' => 'markup', '#value' => $output2 );
@@ -184,10 +188,11 @@ function mailman_manager_user($op, &$edit, &$account, $category=NULL) {
         $query = "SELECT * FROM {mailman_users} WHERE uid = %d AND lid = %d";
         $result = db_query($query,$account->uid,$list[lid]);
         $subscrip = db_fetch_array($result);
-        if ( $edit['pass'.trim($list[lid])] == '' )
+        if ( $edit['pass'.trim($list[lid])] == '' ) {
             $password = $subscrip[lpass];
-        else
+		} else {
             $password = $edit['pass'.trim($list[lid])];
+		}
         $edit['pass'.trim($list[lid])] = ''; // See http://api.drupal.org/api/4.7/function/hook_user
 	    if ($subscrip[lstatus] != $edit[$listno]) {
 	      _mailman_manager_update_subscriptions($account->uid,$list[lid],$edit[$listno],
@@ -222,16 +227,19 @@ function _mailman_manager_admin_display() {
   $output = '<div class="mailman_manager">';
   $lists = _mailman_manager_get_lists();
   if (count($lists) == 0) {
-    $output .= '<p>'.t('There are no lists available for subscription.<table><tr>');
+    $output .= '<p>'.t('There are no lists available for subscription.').'</p>';
   } else {
-    $output .= '<p>'.t('The following lists are available for subscription.<table><tr>');
+    $output .= '<p>'.t('The following lists are available for subscription.').'<table><tr>';
 	$output .= '<th width = 10%>ID</th>';
 	$output .= '<th width = 30%>Name</th>';
 	$output .= '<th width = 50%>Request Address</th>';
 	$output .= '<th width = 10%>Delete?</th></tr>';
+	
     $output .= drupal_get_form('mailman_manager_edit_lists_form',$lists);
+	$output .= '</tr></table></div>';
   }
-  $output .= '</tr></table></div>';
+  
+  
   $output .= drupal_get_form('mailman_manager_add_list_form');
   return $output;  
 }
@@ -256,23 +264,29 @@ function mailman_manager_edit_lists_form($lists) {
 
 function mailman_manager_add_list_form() {
   $form['add_name'] = array (
-  	'#title' => 'Enter list name',
+   	'#title' => 'Mailing List name',
   	'#type' => 'textfield',
+	'#required' => true,
   );
   $form['reqaddress'] = array (
-  	'#title' => 'Enter list \'request\' address (commands are sent here)',
+   	'#title' => 'Mailing List \'request\' address',
+    '#description' => 'commands are sent here',
   	'#type' => 'textfield',
+	'#required' => true
   );
   $form['adminaddress'] = array (
-  	'#title' => 'Enter list \'admin\' address (Optional. admin is used for BCC)',
+  	'#title' => 'Mailing List \'admin\' address',
+  	'#description' =>  '(Optional. admin is used for BCC)',
   	'#type' => 'textfield',
   );
   $form['webaddress'] = array (
-  	'#title' => 'Enter list web address for users (http://...). Leave empty if hidden.',
+  	'#title' => 'Mailing list web address for users', 
+  	'#description' => '(http://...). Leave empty if hidden.',
   	'#type' => 'textfield',
   );
   $form['webarchive'] = array (
-  	'#title' => 'Enter list web archive address for users (http://...). Leave empty if hidden.',
+  	'#title' => 'Mailing list web archive address for users',
+  	'#description' => '(http://...). Leave empty if hidden.',
   	'#type' => 'textfield',
   );
   $form['Submit'] = array (
@@ -323,7 +337,7 @@ function _mailman_manager_admin_delete($edit) {
       }    	  
 	}
   }
-  return t('Successfully deleted '.$listcount.' mailing list(s).');	    
+  return t('Successfully deleted').' '.$listcount.' '.t('mailing list(s).');	    
 }
 
 /**
@@ -345,7 +359,7 @@ function _mailman_manager_get_subscriptions($uid,$lid) {
   $result = db_query($query,$uid,$lid);
   //If there are no entries for this user then set subscriptions to zero;
   //and return no mail button option for display;
-  if (mysql_num_rows($result) == 0) {
+  if (db_num_rows($result) == 0) {
     $query = "INSERT INTO {mailman_users} (uid,lid,lstatus) VALUES (%d, %d, %d)";
     db_query($query,$uid,$lid,0);
     $subscrip = array (
@@ -446,16 +460,16 @@ function _mailman_manager_subscribe($uid, $lid, $mail, $digest, $password){
       $password .= trim($uid).substr($mail,0,1);
   }
   $command = "subscribe ".$password." ".$digest." address=".trim($mail);
-  $headers = "";
+
   // If the adminaddress was given, use BCC
-  $headers .= "From: ". variable_get('site_mail', ini_get('sendmail_from')) ."\n";
   if ( $adminaddress != "" ) {
-      $headers .= "Bcc: ".$adminaddress."\n";
+     $headers = array('Bcc: '.$adminaddress);
   } else {
+     $headers = array(NULL);
   }
-  mail($commandaddress,'',$command,$headers);
+  $mailsuccess = drupal_mail ('mailman-manager', $commandaddress, '', $command, variable_get('site_mail', ini_get('sendmail_from')), $headers);
   $query = "UPDATE {mailman_users} SET lmail = '%s', lpass = '%s' WHERE uid = %d AND lid = %d";
-  if (db_query($query,$mail,$password,$uid,$lid)){
+  if (db_query($query,$mail,$password,$uid,$lid) && $mailsuccess){
     $watchdog = 'New subscription to list '.$lid.' for user '.$uid.' completed successfully.';
 	watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
   } else {
@@ -474,12 +488,16 @@ function _mailman_manager_setdelivery($uid, $lid, $mail, $command) {
   $list = db_fetch_array($result);
   $commandaddress = $list[command];
   $adminaddress = $list[admin];
-  $headers = "From: ". variable_get('site_mail', ini_get('sendmail_from')) ."\n";
-  if ( $adminaddress != "" )
-      $headers .= "Bcc: ".$adminaddress."\n";
+
+  // If the adminaddress was given, use BCC
+  if ( $adminaddress != "" ) {
+     $headers = array('Bcc: '.$adminaddress);
+  } else {
+     $headers = array(NULL);
+  }
   $watchdog = 'Mail command sent to Mailman to: '. $commandaddress.' Command: '.$command;
   watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-  mail($commandaddress,'',$command,$headers);
+  drupal_mail ('mailman-manager', $commandaddress, '', $command, variable_get('site_mail', ini_get('sendmail_from')), $headers);
   return; 
 }
 
