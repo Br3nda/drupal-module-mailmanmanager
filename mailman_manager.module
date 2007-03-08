@@ -382,7 +382,7 @@ return $subscrip;
 /**
  * Update user's subscriptions to mailing lists.
  */
-function _mailman_manager_update_subscriptions($uid,$lid,$lstatus,$oldstatus,$mail,$password) {
+function _mailman_manager_update_subscriptions($uid, $lid, $lstatus, $oldstatus, $mail, $password) {
     // Do not update status for 'mail password':
     if ( $lstatus != 4 ) {
         $query = "UPDATE {mailman_users} SET lstatus = %d WHERE uid = %d AND lid = %d";
@@ -394,7 +394,7 @@ function _mailman_manager_update_subscriptions($uid,$lid,$lstatus,$oldstatus,$ma
   case 0:
     $command = "unsubscribe ".$password." address=".$mail;
     _mailman_manager_setdelivery($uid, $lid, $mail, $command);	
-    $watchdog = 'User '.$uid.' unsuibscribed from list '.$lid;
+    $watchdog = t('User %uid unsubscribed from list %lid', array('lid'=>$lid, 'uid' => $uid));
     watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
   break;
     
@@ -404,7 +404,7 @@ function _mailman_manager_update_subscriptions($uid,$lid,$lstatus,$oldstatus,$ma
     $command = "set authenticate ".$password." address=".$mail."\n";
     $command .= "set delivery off"; 
     _mailman_manager_setdelivery($uid, $lid, $mail, $command);	
-    $watchdog = 'Subscription to list '.$lid.' for user '.$uid.' changed to no mail';
+    $watchdog = t('Subscription to list %lid for user %uid changed to no mail', array('lid'=>$lid, 'uid' => $uid));
     watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
   break;
 	
@@ -417,7 +417,7 @@ function _mailman_manager_update_subscriptions($uid,$lid,$lstatus,$oldstatus,$ma
       $command .= "set delivery on\n"; 
       $command .= "set digest plain"; 
       _mailman_manager_setdelivery($uid,$lid,$mail,$command);	
-      $watchdog = 'Subscription to list '.$lid.' for user '.$uid.' changed to digest';
+      $watchdog = t('Subscription to list %lid for user %uid changed to digest', array('lid'=>$lid, 'uid' => $uid));
       watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
     } 	 
   break;	   
@@ -430,8 +430,8 @@ function _mailman_manager_update_subscriptions($uid,$lid,$lstatus,$oldstatus,$ma
       $command = "set authenticate ".$password." address=".$mail."\n";
       $command .= "set delivery on\n"; 
       $command .= "set digest off"; 
-	  _mailman_manager_setdelivery($uid,$lid,$mail,$command);
-      $watchdog = 'Subscription to list '.$lid.' for user '.$uid.' changed to all mail';
+	  _mailman_manager_setdelivery($uid, $lid, $mail,$command);
+      $watchdog = t('Subscription to list %lid for user %uid changed to all mail', array('lid'=>$lid, 'uid' => $uid));
       watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
 	}
   break;
@@ -442,8 +442,8 @@ function _mailman_manager_update_subscriptions($uid,$lid,$lstatus,$oldstatus,$ma
         return;
 	} else {
       $command = "password address=".$mail."\n";
-	  _mailman_manager_setdelivery($uid,$lid,$mail,$command);
-      $watchdog = 'Password for list '.$lid.' for user '.$uid.' sent by mail';
+	  _mailman_manager_setdelivery($uid, $lid, $mail, $command);
+      $watchdog = t('Password for list %lid for user %uid sent by mail', array('lid'=>$lid, 'uid' => $uid));
       watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
 	}
   break;
