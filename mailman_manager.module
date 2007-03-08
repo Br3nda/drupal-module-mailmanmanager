@@ -235,10 +235,10 @@ function _mailman_manager_admin_display() {
     $output .= '<p>'.t('There are no lists available for subscription.').'</p>';
   } else {
     $output .= '<p>'.t('The following lists are available for subscription.').'<table><tr>';
-	$output .= '<th width = 10%>ID</th>';
-	$output .= '<th width = 30%>Name</th>';
-	$output .= '<th width = 50%>Request Address</th>';
-	$output .= '<th width = 10%>Delete?</th></tr>';
+	$output .= '<th width = 10%>'. t('ID') .'</th>';
+	$output .= '<th width = 30%>'. t('Name') .'</th>';
+	$output .= '<th width = 50%>'. t('Request Address') . '</th>';
+	$output .= '<th width = 10%>'. t('Delete') .'?</th></tr>';
 	
     $output .= drupal_get_form('mailman_manager_edit_lists_form',$lists);
 	$output .= '</tr></table></div>';
