@@ -310,15 +310,16 @@ function _mailman_manager_admin_save($edit) {
   $admin = trim($edit['adminaddress']);  
   $web = trim($edit['webaddress']);  
   $webarch = trim($edit['webarchive']);  
+  
   $query = "INSERT INTO {mailman_lists} (name,command,admin,web,webarch) VALUES ('%s', '%s', '%s', '%s', '%s')";
   if (db_query($query,$name,$command,$admin,$web,$webarch)){
-    $watchdog = 'New Mailman list '.$name.' successfully created';
+    $message = t('New Mailman list %name successfully created', array('name' => $name));
 	watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-    return t('The mailing lists have been updated.');
+    return $message;
   } else {
-    $watchdog = 'Error in creating new Mailman list '.$name;
+    $message = t('Error in creating new Mailman list %name', array('name' => $name));
 	watchdog('mailman man', $watchdog, 'WATCHDOG_ERROR', NULL);
-    return t('Error creating mailing list.');
+    return $message;
   }  
 }
 
