@@ -116,7 +116,7 @@ function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
 		foreach ($lists as $list) {
             $form['mman']['list'.trim($list['lid'])] = array(
                                                    '#type' => 'fieldset',
-                                                   '#title' => $list['name'], 
+                                                   '#title' => t($list['name']), 
                                                    '#collapsible' => TRUE
                                    );
 
@@ -145,7 +145,7 @@ function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
                                                               '#title' => t('Password for '.$list['name'].' (optional)'),
                                                               '#size' => 15,
                                                               '#required' => FALSE,
-                                                              '#default_value' => $subscrip['lpass']
+                                                              '#default_value' => t($subscrip['lpass'])
                                                               );
             }
             if ($list['web'] || $list['webarch']) {
@@ -261,7 +261,7 @@ function mailman_manager_edit_lists_form($lists) {
   $form['Submit'] = array(
     '#prefix' => '<tr><td colspan=4>',
   	'#type' => 'submit',
-	'#value' => 'Delete checked lists',
+	'#value' => t('Delete checked lists'),
 	'#suffix' => '</td></tr>'
   );
   return $form;
@@ -274,29 +274,29 @@ function mailman_manager_add_list_form() {
 	'#required' => true,
   );
   $form['reqaddress'] = array (
-   	'#title' => 'Mailing List \'request\' address',
-    '#description' => 'commands are sent here',
+   	'#title' => t("Mailing List 'request' address"),
+    '#description' => t('Commands are sent here'),
   	'#type' => 'textfield',
 	'#required' => true
   );
   $form['adminaddress'] = array (
-  	'#title' => 'Mailing List \'admin\' address',
-  	'#description' =>  '(Optional. admin is used for BCC)',
+  	'#title' => t("Mailing List 'admin' address"),
+  	'#description' =>  t('(Optional. admin is used for BCC)'),
   	'#type' => 'textfield',
   );
   $form['webaddress'] = array (
-  	'#title' => 'Mailing list web address for users', 
-  	'#description' => '(http://...). Leave empty if hidden.',
+  	'#title' => t('Mailing list web address for users'), 
+  	'#description' => t('http://...' ) . t("Leave empty if hidden."),
   	'#type' => 'textfield',
   );
   $form['webarchive'] = array (
-  	'#title' => 'Mailing list web archive address for users',
-  	'#description' => '(http://...). Leave empty if hidden.',
+  	'#title' => t('Mailing list web archive address for users'),
+  	'#description' => t('http://.... ') .  t('Leave empty if hidden.'),
   	'#type' => 'textfield',
   );
   $form['Submit'] = array (
   	'#type' => 'submit',
-	'#value' => 'Add list',
+	'#value' => t('Add list'),
   );
   return $form;
 }
