@@ -501,7 +501,7 @@ function _mailman_manager_setdelivery($uid, $lid, $mail, $command) {
   } else {
      $headers = array(NULL);
   }
-  $watchdog = 'Mail command sent to Mailman to: '. $commandaddress.' Command: '.$command;
+  $watchdog = t('Mail command sent to Mailman to: %commandaddress. Command: %command', array('commandaddress' => $commandaddress, 'command' => $command));
   watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
   drupal_mail ('mailman-manager', $commandaddress, '', $command, variable_get('site_mail', ini_get('sendmail_from')), $headers);
   return; 
@@ -513,8 +513,7 @@ function _mailman_manager_setdelivery($uid, $lid, $mail, $command) {
 function _mailman_manager_rand_str($size)
 {
    $feed = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-   for ($i=0; $i < $size; $i++)
-   {
+   for ($i=0; $i < $size; $i++) {
        $rand_str .= substr($feed, rand(0, strlen($feed)-1), 1);
    }
    return $rand_str;
