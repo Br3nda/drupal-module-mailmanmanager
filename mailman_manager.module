@@ -476,10 +476,10 @@ function _mailman_manager_subscribe($uid, $lid, $mail, $digest, $password){
   $mailsuccess = drupal_mail ('mailman-manager', $commandaddress, '', $command, variable_get('site_mail', ini_get('sendmail_from')), $headers);
   $query = "UPDATE {mailman_users} SET lmail = '%s', lpass = '%s' WHERE uid = %d AND lid = %d";
   if (db_query($query,$mail,$password,$uid,$lid) && $mailsuccess){
-    $watchdog = 'New subscription to list '.$lid.' for user '.$uid.' completed successfully.';
+    $watchdog = t('New subscription to list %lid for user %uid completed successfully.', array('lid'=>$lid, 'uid' => $uid));
 	watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
   } else {
-    $watchdog = 'New subscription to list '.$lid.' for user '.$uid.' failed.';
+    $watchdog = t('New subscription to list %lid for user %uid failed.', array('lid'=>$lid, 'uid' => $uid));
 	watchdog('mailman man', $watchdog, 'WATCHDOG_ERROR', NULL);
   }	  
   return; 
