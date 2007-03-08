@@ -334,16 +334,16 @@ function _mailman_manager_admin_delete($edit) {
 	if ($delete) {
 	  $query = "DELETE FROM {mailman_lists} WHERE lid = %d";
 	  if (db_query($query,$list[lid])) {
-        $watchdog = 'Successfully deleted Mailman list '.$list[lid];
-		watchdog('mailman man', $watchdog, 'WATCHDOG_ERROR', NULL);
+        $message = t('Successfully deleted Mailman list %listid', array('listid' =>$list[lid]));
+		watchdog('mailman man', $message, 'WATCHDOG_ERROR', NULL);
 		$listcount++;
 	  } else {
-        $watchdog = 'Error in deleting Mailman list '.$list[lid];
-		watchdog('mailman man', $watchdog, 'WATCHDOG_ERROR', NULL);
+        $message = t('Error in deleting Mailman list %listid', array('listid'=> $list[lid]));
+		watchdog('mailman man', $message, 'WATCHDOG_ERROR', NULL);
       }    	  
 	}
   }
-  return t('Successfully deleted').' '.$listcount.' '.t('mailing list(s).');	    
+  return t('Successfully deleted %listcount mailing list(s).', array('listcount' => $listcount)); 
 }
 
 /**
