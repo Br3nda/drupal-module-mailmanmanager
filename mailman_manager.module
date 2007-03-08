@@ -12,14 +12,18 @@
  * Implementation of hook_help().
  */
 function mailman_manager_help($section) {
-  switch ($section) {
-    case 'admin/modules#description':
-      return t('Utilities related to Mailman manager, subscription system and database for Mailman mailing lists.');
-      break;
-    case 'admin/help#mailman_manager':
-      return t('<p>Utilities related to Mailman manager, subscription system and database for Mailman mailing lists.</p><p>This tool works using the mailman email interface. All commands sent by this module are also BCC\'ed to the list admin. One can optionally specify the web interface and/or the web archive of each list. The module can not know if a user is previously subscribed but allows the user to specify a password which can then be used to hook into an existing account.</p>');
-      break;
-  }
+	switch ($section) {
+		case 'admin/modules#description':
+			return t('Utilities related to Mailman manager, subscription system and database for Mailman mailing lists.');
+		break;
+		case 'admin/help#mailman_manager':
+			
+			$output = '<p>' . t('Utilities related to Mailman manager, subscription system and database for Mailman mailing lists.') . '</p>';
+			$output .= '<p>' . t("This tool works using the mailman email interface. All commands sent by this module are also BCC'ed to the list admin. One can optionally specify the web interface and/or the web archive of each list. The module can not know if a user is previously subscribed but allows the user to specify a password which can then be used to hook into an existing account.") . '</p>';
+			
+			return $output;
+		break;
+	}
 }
 
 /**
@@ -70,11 +74,11 @@ function mailman_manager_menu($may_cache) {
  * Menu callback; Forwards request to hook_user;
  */
 function mailman_manager_page() {
-  global $user;
   if (!user_access('access mailman_manager')) {
-    print theme('page', 'You must be an authorized member to subscribe to mailing lists');
+    print theme('page', t('You must be an authorized member to subscribe to mailing lists'));
   }
   else {
+    global $user;
     drupal_goto('user/'.$user->uid.'/edit/mailman_manager');
   }
 }
@@ -161,7 +165,8 @@ function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
 	}
 	if ($status != 0) {
 		$output2 = '<p>'.t('Your current email address is not subscribed to').' '.$status.' '.t('list(s).').'<p>';
-	} else {
+	} 
+	else {
 		$output2 = '<p>'.t('Your current email address is currently subscribed to all lists.').'<p>';
     }
 	$output2 .= '</div>';
