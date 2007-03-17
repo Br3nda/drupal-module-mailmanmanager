@@ -63,9 +63,28 @@ function mailman_manager_menu($may_cache) {
     $items[] = array('path' => 'admin/settings/mailman_manager',
       'title' => t('Mailing Lists'),
       'access' => user_access('administer mailman_manager'),
-	  'description' => t('Allow users to subscribe and change their subscriptions to Mailman mailing lists.'),
+          'description' => t('Allow users to subscribe and change their subscriptions to Mailman mailing lists.'),
       'callback' => 'mailman_manager_admin',
       'type' => MENU_NORMAL_ITEM);
+    
+    $items[] = array('path' => 'admin/settings/mailman_manager/add',
+                     'title' => t('Add New'),
+                     'access' => user_access('administer mailman_manager'),
+                     'description' => t('Add new Mailman mailing lists.'),
+                     'callback' => 'mailman_manager_admin_add',
+                     'type' => MENU_NORMAL_ITEM);
+    $items[] = array('path' => 'admin/settings/mailman_manager/edit',
+                     'title' => t('Edit Mailing list'),
+                     'access' => user_access('administer mailman_manager'),
+                     'description' => t('Add new Mailman mailing lists.'),
+                     'callback' => 'mailman_manager_admin_edit',
+                     'type' => MENU__CALLBACK);
+    $items[] = array('path' => 'admin/settings/mailman_manager/delete',
+                     'title' => t('Delete Mailing list'),
+                     'access' => user_access('administer mailman_manager'),
+                     'description' => t('Add new Mailman mailing lists.'),
+                     'callback' => 'mailman_manager_admin_delete',
+                     'type' => MENU_CALLBACK);
   }
   return $items;
 }
@@ -216,39 +235,196 @@ function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
  * Menu callback; displays the mailing list overview/editing page.
  */
 function mailman_manager_admin() {
-  $edit = $_POST;
-  $op = $edit['op'];
-
-  if ($op == t('Add list')) {
-	drupal_set_message(_mailman_manager_admin_save($edit));
-  }
-  else if ($op == t('Delete checked lists')) {
-	drupal_set_message(_mailman_manager_admin_delete($edit));
-  }
   print theme('page', _mailman_manager_admin_display());
+}
+
+function mailman_manager_admin_edit($id) {
+  return  drupal_get_form('mailman_manager_admin_form', $id);
+}
+  
+function mailman_manager_admin_delete($id) {
+  return drupal_get_form('mailman_manager_admin_delete_form', $id);
+}
+
+function mailman_manager_admin_delete_form($id) {
+  $form = array();
+  $list = mailman_manager_get_list($id);
+  $form['lid'] = array(
+                        '#type' => 'hidden', 
+                        '#value' => $id
+        );
+  $form['submit'] = array(
+        '#type' => 'submit',
+                           '#value' => t('Delete %listname', array('%listname' => $list->name))
+  );
+  return $form;
+}
+
+function mailman_manager_admin_delete_form_submit($form_id, $form_values) {
+  $query = "DELETE FROM {mailman_lists} WHERE lid = %d";
+  if (db_query($query,$form_values['lid'])) {
+    $message = t('Successfully deleted Mailman list %listid', array('%listid' =>$list[lid]));
+    watchdog('mailman man', $message, 'WATCHDOG_ERROR', NULL);
+    drupal_goto('admin/settings/mailman_manager');
+  }  
+}
+
+function mailman_manager_admin_add() {
+  $output = '';
+  $output .= drupal_get_form('mailman_manager_admin_form');
+  return $output;
+}
+
+function mailman_manager_get_list($id) {
+  return db_fetch_object(db_query("SELECT * FROM {mailman_lists} WHERE lid = %d", $id));
+}
+
+
+function mailman_manager_admin_form($id=false) {
+  $form = array();
+  if ($id) {
+    $list = mailman_manager_get_list($id);
+    $form['lid'] = array(
+                          '#type' => 'hidden',
+                          '#value' => $id
+                        );
+  }
+  
+
+  $form['name'] = array (
+        '#title' => 'Mailing List name',
+                              '#default_value' => t($list->name),
+        '#type' => 'textfield',
+        '#required' => true,
+  );
+  $form['reqaddress'] = array (
+        '#title' => t("Mailing List 'request' address"),
+                                '#default_value' => t($list->command),
+    '#description' => t('Commands are sent here'),
+        '#type' => 'textfield',
+        '#required' => true
+  );
+  $form['adminaddress'] = array (
+        '#title' => t("Mailing List 'admin' address"),
+                                  '#default_value' => t($list->admin),
+        '#description' =>  t('(Optional. admin is used for BCC)'),
+        '#type' => 'textfield',
+  );
+  $form['webaddress'] = array (
+        '#title' => t('Mailing list web address for users'), 
+                                '#default_value' => t($list->web),
+        '#description' => t('http://...' ) . t("Leave empty if hidden."),
+        '#type' => 'textfield',
+  );
+  $form['webarchive'] = array (
+        '#title' => t('Mailing list web archive address for users'),
+                                '#default_value' => t($list->webarch),
+        '#description' => t('http://.... ') .  t('Leave empty if hidden.'),
+        '#type' => 'textfield',
+  );
+  
+  $form['Submit'] = array (
+        '#type' => 'submit',
+                            '#value' => ($id ? t('Save') : t('Add')),
+  );
+  return $form;
+  
+}
+
+function mailman_manager_admin_form_validate($form_id, $form_values) {
+  //Check name is unique
+  $result = db_query("SELECT * from {mailman_lists} WHERE name = '%s'" . ($form_values['lid'] ? ' AND lid != %d' : ''), $form_values['name'], $form_values['lid']);
+  if (db_num_rows($result)) {
+    form_set_error('name', 'Name already in use');
+  }
+
+  
+  if ($form_values['reqaddress'] && !valid_email_address($form_values['reqaddress'])) {
+    form_set_error('reqaddress', t('"%reqaddress" is not a valid email address', array('%reqaddress' => $form_values['reqaddress'])));
+  }
+  
+  if ($form_values['adminaddress'] && !valid_email_address($form_values['adminaddress'])) {
+    form_set_error('adminaddress', t('"%adminaddress" is not a valid email address', array('%adminaddress' => $form_values['adminaddress'])));
+  }
+  
+  if ($form_values['webaddress'] && !valid_url($form_values['webaddress'])) {
+    form_set_error('webaddress', t('"%webaddress" is not a valid url', array('%webaddress' => $form_values['webaddress'])));
+  }
+  
+  if ($form_values['webarchive'] && !valid_url($form_values['webarchive'])) {
+    form_set_error('webarchive', t('"%webarchive" is not a valid url', array('%webarchive' => $form_values['webarchive'])));
+  }
+    
+}
+
+/**
+* Save new mailing list.
+*/
+function mailman_manager_admin_form_submit($form_id, $form_values) {
+  
+  if ($form_values['lid']) {
+    //Update existin
+    $query = "UPDATE {mailman_lists} SET name = '%s', command = '%s', admin = '%s', web = '%s', webarch = '%s' WHERE lid = %d";
+    $result = db_query($query, 
+                       $form_values['name'], 
+                       $form_values['reqaddress'], 
+                       $form_values['adminaddress'], 
+                       $form_values['webaddress'], 
+                       $form_values['webarchive'],
+                       $form_values['lid']
+                      );
+    if ($result) drupal_goto('admin/settings/mailman_manager');
+  } 
+  else {
+    //Create new
+    $query = "INSERT INTO {mailman_lists} (name, command, admin, web, webarch) VALUES ('%s', '%s', '%s', '%s', '%s')";
+    if (db_query($query, 
+                $form_values['name'], 
+                $form_values['reqaddress'], 
+                $form_values['adminaddress'], 
+                $form_values['webaddress'], 
+                $form_values['webarchive'])) {
+    $message = t('New Mailman list %name successfully created', array('%name' => $name));
+        watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
+      drupal_goto('admin/settings/mailman_manager');
+  } else {
+    $message = t('Error in creating new Mailman list %name', array('%name' => $name));
+        watchdog('mailman man', $watchdog, 'WATCHDOG_ERROR', NULL);
+    return $message;
+  }  
+  }
 }
 
 /**
  * Prepare the mailing list admin form.
  */
 function _mailman_manager_admin_display() {
-  $output = '<div class="mailman_manager">';
-  $lists = _mailman_manager_get_lists();
-  if (count($lists) == 0) {
-    $output .= '<p>'.t('There are no lists available for subscription.').'</p>';
-  } else {
-    $output .= '<p>'.t('The following lists are available for subscription.').'<table><tr>';
-	$output .= '<th width="10%">'. t('ID') .'</th>';
-	$output .= '<th width="30%">'. t('Name') .'</th>';
-	$output .= '<th width="50%">'. t('Request Address') . '</th>';
-	$output .= '<th width="10%">'. t('Delete') .'?</th></tr>';
-	
-    $output .= drupal_get_form('mailman_manager_edit_lists_form',$lists);
-	$output .= '</tr></table></div>';
-  }
+  $output = '';
   
+  $headers = array(
+                    array('field'=>'lid'), 
+                    array('data'=> t('Name'), 'field' => 'name', 'sort' => 'desc'),
+                    array('data' => t('Request Address'), 'field' => 'command'),
+                 );
   
-  $output .= drupal_get_form('mailman_manager_add_list_form');
+    
+  $query = "SELECT * from {mailman_lists}";
+  $query .= tablesort_sql($headers);
+  
+  $num_per_page = 15;
+  $result = pager_query($query, $num_per_page);
+  $lists = array();
+  while($list = db_fetch_object($result)) {
+    $list->edit = l(t('Edit'), 'admin/settings/mailman_manager/edit/' . $list->lid);
+    $list->delete = l(t('Delete'), 'admin/settings/mailman_manager/delete/' . $list->lid);
+    $lists[] = $list;
+      }           
+
+  $output .= theme('table', $headers, $lists);
+  $output .= theme('pager', $num_per_page);
+  
+  $output .= l(t('Add new mailing list'), 'admin/settings/mailman_manager/add');
+
   return $output;  
 }
 
@@ -256,101 +432,22 @@ function mailman_manager_edit_lists_form($lists) {
   $form = array();
   if (!count($lists)) {
     return $form;
-  }
+        }
   foreach ($lists as $list) {
     $form['del'.$list[lid]] = array(
           '#prefix' => '<tr><td>'.$list[lid].'</td><td>'.$list[name].'</td><td>'.$list[command].'</td><td>',
-	  '#type' => 'checkbox',
-	  '#default_value' => 0,
+          '#type' => 'checkbox',
+          '#default_value' => 0,
       '#suffix' => '</td></tr>'
-	);
+        );
   }
   $form['Submit'] = array(
     '#prefix' => '<tr><td colspan=4>',
-  	'#type' => 'submit',
-	'#value' => t('Delete checked lists'),
-	'#suffix' => '</td></tr>'
+        '#type' => 'submit',
+        '#value' => t('Delete checked lists'),
+        '#suffix' => '</td></tr>'
   );
   return $form;
-}
-
-function mailman_manager_add_list_form() {
-  $form['add_name'] = array (
-   	'#title' => 'Mailing List name',
-  	'#type' => 'textfield',
-	'#required' => true,
-  );
-  $form['reqaddress'] = array (
-   	'#title' => t("Mailing List 'request' address"),
-    '#description' => t('Commands are sent here'),
-  	'#type' => 'textfield',
-	'#required' => true
-  );
-  $form['adminaddress'] = array (
-  	'#title' => t("Mailing List 'admin' address"),
-  	'#description' =>  t('(Optional. admin is used for BCC)'),
-  	'#type' => 'textfield',
-  );
-  $form['webaddress'] = array (
-  	'#title' => t('Mailing list web address for users'), 
-  	'#description' => t('http://...' ) . t("Leave empty if hidden."),
-  	'#type' => 'textfield',
-  );
-  $form['webarchive'] = array (
-  	'#title' => t('Mailing list web archive address for users'),
-  	'#description' => t('http://.... ') .  t('Leave empty if hidden.'),
-  	'#type' => 'textfield',
-  );
-  $form['Submit'] = array (
-  	'#type' => 'submit',
-	'#value' => t('Add list'),
-  );
-  return $form;
-}
-
-/**
- * Save new mailing list.
- */
-function _mailman_manager_admin_save($edit) {
-  $name = trim($edit['add_name']);
-  $command = trim($edit['reqaddress']);
-  $admin = trim($edit['adminaddress']);  
-  $web = trim($edit['webaddress']);  
-  $webarch = trim($edit['webarchive']);  
-  
-  $query = "INSERT INTO {mailman_lists} (name,command,admin,web,webarch) VALUES ('%s', '%s', '%s', '%s', '%s')";
-  if (db_query($query, $name, $command, $admin, $web, $webarch)){
-    $message = t('New Mailman list %name successfully created', array('%name' => $name));
-	watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-    return $message;
-  } else {
-    $message = t('Error in creating new Mailman list %name', array('%name' => $name));
-	watchdog('mailman man', $watchdog, 'WATCHDOG_ERROR', NULL);
-    return $message;
-  }  
-}
-
-/**
- * Delete a mailing list.
- */
-function _mailman_manager_admin_delete($edit) {
-  $lists = _mailman_manager_get_lists();
-  $listcount=0;
-  foreach($lists as $list) {
-    $delete=$edit['del'.$list[lid]];
-	if ($delete) {
-	  $query = "DELETE FROM {mailman_lists} WHERE lid = %d";
-	  if (db_query($query,$list[lid])) {
-        $message = t('Successfully deleted Mailman list %listid', array('%listid' =>$list[lid]));
-		watchdog('mailman man', $message, 'WATCHDOG_ERROR', NULL);
-		$listcount++;
-	  } else {
-        $message = t('Error in deleting Mailman list %listid', array('%listid'=> $list[lid]));
-		watchdog('mailman man', $message, 'WATCHDOG_ERROR', NULL);
-      }    	  
-	}
-  }
-  return t('Successfully deleted %listcount mailing list(s).', array('%listcount' => $listcount)); 
 }
 
 /**
