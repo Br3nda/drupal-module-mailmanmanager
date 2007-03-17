@@ -94,7 +94,10 @@ function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
   //Create menu option on user tab;
     case 'categories':
+      $lists = _mailman_manager_get_lists();
+      if (count($lists)) {
       $output_user[] = array('name' => 'mailman_manager', 'title' => t('Mailing Lists'), 'weight' => 9);
+      }
     return $output_user;
     break;
 
@@ -120,12 +123,12 @@ function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
                                                    '#collapsible' => TRUE
                                    );
 
-	        $subscrip = _mailman_manager_get_subscriptions($account->uid, $list['lid']);
-			if ($subscrip['lstatus'] == 0) {
-				$options = array('2' => t('Subscribe for digest (receive emails in a bundle)'),
+                $subscrip = _mailman_manager_get_subscriptions($account->uid, $list['lid']);
+                        if ($subscrip['lstatus'] == 0) {
+      $options = array( '2' => t('Subscribe for digest (receive emails in a bundle)'),
                                  '3' => t('Subscribe for all Mail (normal delivery)'));
-				$status++;
-			} 
+                                $status++;
+                        } 
 			else {
 				$options = array('0' => t('Unsubscribe'),
                                  '1' => t('No mail (temporarily disable delivery)'),
@@ -155,22 +158,22 @@ function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
                 }
                 if ($list['web'] && $list['webarch']) {
                     $link_output .= ' '.t('or:').' ';
-				}
+                                }
                 if ($list['webarch']) {
-                    $link_output .= l($list['name'].' '.t('archive'), $list['webarch']);
+        $link_output .= l(t('%listname archive.', array('%listname' => $list['name'])), $list['webarch']);
                 }
                 $form['mman']['list'.trim($list['lid'])]['links'] = array('#type' => 'markup', '#value' => $link_output);
             }
-		}
-	}
-	if ($status != 0) {
-		$output2 = '<p>'.t('Your current email address is not subscribed to %status list(s).', array('%status' => $status)).'<p>';
-	} 
-	else {
-		$output2 = '<p>'.t('Your current email address is currently subscribed to all lists.').'<p>';
+                }
+        }
+        if ($status != 0) {
+    $output2 = '<p>'. t('Your current email address is not subscribed to %status list(s).', array('%status' => $status)) .'</p>';
+        } 
+        else {
+    $output2 = '<p>'. t('Your current email address is currently subscribed to all lists.') .'</p>';
     }
-	$output2 .= '</div>';
-	$form['lists']['subinfo'] = array( '#type' => 'markup', '#value' => $output2 );
+        $output2 .= '</div>';
+        $form['lists']['subinfo'] = array( '#type' => 'markup', '#value' => $output2 );
 	$form['lists']['oldemail'] = array(
 		'#type' => 'hidden',
 		'#default_value' => $subscrip[lmail]
@@ -250,9 +253,13 @@ function _mailman_manager_admin_display() {
 }
 
 function mailman_manager_edit_lists_form($lists) {
+  $form = array();
+  if (!count($lists)) {
+    return $form;
+  }
   foreach ($lists as $list) {
     $form['del'.$list[lid]] = array(
-	  '#prefix' => '<tr><td>'.$list[lid].'</td><td>'.$list[name].'</td><td>'.$list[command].'</td><td>',
+          '#prefix' => '<tr><td>'.$list[lid].'</td><td>'.$list[name].'</td><td>'.$list[command].'</td><td>',
 	  '#type' => 'checkbox',
 	  '#default_value' => 0,
       '#suffix' => '</td></tr>'
@@ -351,10 +358,11 @@ function _mailman_manager_admin_delete($edit) {
  */
 function _mailman_manager_get_lists() {
   $result = db_query("SELECT * FROM {mailman_lists}");
+  $lists = array();
   while ($list = db_fetch_array($result)){
     $lists[]=$list;
   }
-return $lists;
+  return $lists;
 }
 
 /**
@@ -362,21 +370,24 @@ return $lists;
  */
 function _mailman_manager_get_subscriptions($uid,$lid) {
   $query = "SELECT * FROM {mailman_users} WHERE uid = %d AND lid = %d";
-  $result = db_query($query,$uid,$lid);
+  $result = db_query($query, $uid, $lid);
+  
   //If there are no entries for this user then set subscriptions to zero;
   //and return no mail button option for display;
   if (db_num_rows($result) == 0) {
-    $query = "INSERT INTO {mailman_users} (uid,lid,lstatus) VALUES (%d, %d, %d)";
-    db_query($query,$uid,$lid,0);
+
+    $query = "INSERT INTO {mailman_users} (uid, lid, lstatus) VALUES (%d, %d, %d)";
+    db_query($query, $uid, $lid, 0);
+    
     $subscrip = array (
-      uid => $uid,
-      lid => $lid,
-      lstatus => 0
+      'uid' => $uid,
+      'lid' => $lid,
+      'lstatus' => 0
     );
   } else {
- 	$subscrip=db_fetch_array($result);
+        $subscrip =db_fetch_array($result);
   }
-return $subscrip;
+  return $subscrip;
 }
 
 /**
