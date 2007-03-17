@@ -235,14 +235,23 @@ function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
  * Menu callback; displays the mailing list overview/editing page.
  */
 function mailman_manager_admin() {
+  if (!user_access('administer mailman_manager')) {
+    return '';
+  }
   print theme('page', _mailman_manager_admin_display());
 }
 
 function mailman_manager_admin_edit($id) {
+  if (!user_access('administer mailman_manager')) {
+    return '';
+  }
   return  drupal_get_form('mailman_manager_admin_form', $id);
 }
   
 function mailman_manager_admin_delete($id) {
+  if (!user_access('administer mailman_manager')) {
+    return '';
+  }
   return drupal_get_form('mailman_manager_admin_delete_form', $id);
 }
 
@@ -261,6 +270,9 @@ function mailman_manager_admin_delete_form($id) {
 }
 
 function mailman_manager_admin_delete_form_submit($form_id, $form_values) {
+  if (!user_access('administer mailman_manager')) {
+    return '';
+  }
   $query = "DELETE FROM {mailman_lists} WHERE lid = %d";
   if (db_query($query,$form_values['lid'])) {
     $message = t('Successfully deleted Mailman list %listid', array('%listid' =>$list[lid]));
@@ -270,6 +282,9 @@ function mailman_manager_admin_delete_form_submit($form_id, $form_values) {
 }
 
 function mailman_manager_admin_add() {
+  if (!user_access('administer mailman_manager')) {
+    return '';
+  }
   $output = '';
   $output .= drupal_get_form('mailman_manager_admin_form');
   return $output;
@@ -361,7 +376,9 @@ function mailman_manager_admin_form_validate($form_id, $form_values) {
 * Save new mailing list.
 */
 function mailman_manager_admin_form_submit($form_id, $form_values) {
-  
+  if (!user_access('administer mailman_manager')) {
+    return '';
+  }
   if ($form_values['lid']) {
     //Update existin
     $query = "UPDATE {mailman_lists} SET name = '%s', command = '%s', admin = '%s', web = '%s', webarch = '%s' WHERE lid = %d";
@@ -399,6 +416,9 @@ function mailman_manager_admin_form_submit($form_id, $form_values) {
  * Prepare the mailing list admin form.
  */
 function _mailman_manager_admin_display() {
+  if (!user_access('administer mailman_manager')) {
+    return '';
+  }
   $output = '';
   
   $headers = array(
