@@ -56,8 +56,7 @@ function mailman_manager_update_1() {
 
         // Add web links:
         $ret[] = update_sql("ALTER TABLE {mailman_lists} ADD COLUMN web TEXT");
-	$ret[] = update_sql("ALTER TABLE {mailman_lists} ALTER COLUMN web SET DEFAULT ''"); 
-
+	      $ret[] = update_sql("ALTER TABLE {mailman_lists} ALTER COLUMN web SET DEFAULT ''"); 
         $ret[] = update_sql("ALTER TABLE {mailman_lists} ADD COLUMN webarch text"); 
         $ret[] = update_sql("ALTER TABLE {mailman_lists} ALTER COLUMN webarch SET DEFAULT ''"); 
 
@@ -77,5 +76,26 @@ function mailman_manager_update_1() {
  
     return $ret; 
 } 
+
+function mailman_manager_update_2() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) { 
+    case 'pgsql': 
+      $ret[] = update_sql("ALTER TABLE {mailman_lists} ADD COLUMN allow_anon BOOLEAN");
+      $ret[] = update_sql("UPDATE {mailman_lists} SET allow_anon = false");
+      $ret[] = update_sql("ALTER TABLE {mailman_lists} ALTER COLUMN allow_anon set NOT NULL");
+      $ret[] = update_sql("ALTER TABLE {mailman_lists} ALTER COLUMN allow_anon set DEFAULT false");
+      break; 
+    
+      case 'mysql': 
+      case 'mysqli': 
+      $ret[] = update_sql("ALTER TABLE {mailman_lists} ADD COLUMN allow_anon BOOLEAN DEFAULT false");
+      $ret[] = update_sql("UPDATE {mailman_lists} SET allow_anon = false");
+    break; 
+  }
+  
+  
+  return $ret;
+}
 
 ?>
