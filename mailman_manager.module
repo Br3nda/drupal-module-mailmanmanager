@@ -1,5 +1,5 @@
 <?php
-
+// $Id: mailman_manager.module,v 1.19 2007/03/19 02:10:08 taniwha Exp $
 /**
  * @file
  * Allows users to subscribe to Mailman mailing lists via a form in
