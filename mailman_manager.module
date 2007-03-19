@@ -1,5 +1,5 @@
 <?php
-// $Id: mailman_manager.module,v 1.20 2007/03/19 03:24:40 taniwha Exp $
+// $Id: mailman_manager.module,v 1.21 2007/03/19 03:31:34 taniwha Exp $
 /**
  * @file
  * Allows users to subscribe to Mailman mailing lists via a form in
@@ -429,7 +429,7 @@ function _mailman_manager_admin_display() {
   
   $headers = array(
                     array('field'=>'lid'), 
-                    array('data'=> t('Name'), 'field' => 'name', 'sort' => 'desc'),
+                    array('data'=> t('Name'), 'field' => 'name', 'sort' => 'asc'),
                     array('data' => t('Request Address'), 'field' => 'command'),
                  );
   
