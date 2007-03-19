@@ -1,5 +1,5 @@
 <?php
-// $Id: mailman_manager.install,v 1.9 2007/03/19 04:13:34 taniwha Exp $
+// $Id: mailman_manager.install,v 1.10 2007/03/19 04:14:13 taniwha Exp $
 // mailman_manager.install
 
 function mailman_manager_install() {
@@ -78,7 +78,7 @@ function mailman_manager_update_1() {
     return $ret; 
 }
 //adds desciptions
-function mailman_manager_update_6() {
+function mailman_manager_update_2() {
   $ret = array();
   switch ($GLOBALS['db_type']) { 
     case 'pgsql': 
