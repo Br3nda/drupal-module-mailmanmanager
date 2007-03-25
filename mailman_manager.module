@@ -1,5 +1,5 @@
 <?php
-// $Id: mailman_manager.module,v 1.22 2007/03/19 03:39:39 taniwha Exp $
+// $Id: mailman_manager.module,v 1.23 2007/03/25 10:26:24 taniwha Exp $
 /**
  * @file
  * Allows users to subscribe to Mailman mailing lists via a form in
@@ -146,7 +146,7 @@ function _mailman_manager_user_form(&$account) {
           );
         if ($subscrip['lstatus'] == 0) {
           $form['mman']['list'.trim($list['lid'])]['pass'.trim($list['lid'])] = array('#type' => 'textfield',
-            '#title' => t('Password for %listname (optional)', array('%listname' => $list['name'])),
+            '#title' => t('Password for !listname (optional)', array('!listname' => $list['name'])),
             '#size' => 15,
             '#required' => FALSE,
             '#default_value' => t($subscrip['lpass'])
