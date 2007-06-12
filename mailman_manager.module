@@ -1,5 +1,5 @@
 <?php
-// $Id: mailman_manager.module,v 1.23 2007/03/25 10:26:24 taniwha Exp $
+// $Id: mailman_manager.module,v 1.24 2007/06/12 11:35:40 arturoramos Exp $
 /**
  * @file
  * Allows users to subscribe to Mailman mailing lists via a form in
@@ -12,18 +12,18 @@
  * Implementation of hook_help().
  */
 function mailman_manager_help($section) {
-	switch ($section) {
-		case 'admin/modules#description':
-			return t('Utilities related to Mailman manager, subscription system and database for Mailman mailing lists.');
-		break;
-		case 'admin/help#mailman_manager':
-			
-			$output = '<p>' . t('Utilities related to Mailman manager, subscription system and database for Mailman mailing lists.') . '</p>';
-			$output .= '<p>' . t("This tool works using the mailman email interface. All commands sent by this module are also BCC'ed to the list admin. One can optionally specify the web interface and/or the web archive of each list. The module can not know if a user is previously subscribed but allows the user to specify a password which can then be used to hook into an existing account.") . '</p>';
-			
-			return $output;
-		break;
-	}
+  switch ($section) {
+    case 'admin/modules#description':
+      return t('Utilities related to Mailman manager, subscription system and database for Mailman mailing lists.');
+    break;
+    case 'admin/help#mailman_manager':
+      
+      $output = '<p>' . t('Utilities related to Mailman manager, subscription system and database for Mailman mailing lists.') . '</p>';
+      $output .= '<p>' . t("This tool works using the mailman email interface. All commands sent by this module are also BCC'ed to the list admin. One can optionally specify the web interface and/or the web archive of each list. The module can not know if a user is previously subscribed but allows the user to specify a password which can then be used to hook into an existing account.") . '</p>';
+      
+      return $output;
+    break;
+  }
 }
 
 /**
@@ -104,87 +104,86 @@ function mailman_manager_page() {
 
 function _mailman_manager_user_form(&$account) {
   $form = array();
-  
-    $output = '<div class="mailman_manager">';
-    $output .= '<p>'.t('The following email address will be subscribed to the email lists:').'<br /><strong>'.$account->mail.'</strong></p>';
-    
-    $output .= '<p>'.t('If you would like to have a different email address subscribed, change your email address in the account settings tab.').'</p>';
-    $lists = _mailman_manager_get_lists();
-    
-    $form['mman'] = array('#type' => 'markup', '#value' => $output);
-    if (count($lists) == 0) {
-      $output = t('There are no lists available for subscription.');
-    } 
-    else {
-      $status = 0;
-      foreach ($lists as $list) {
-        $form['mman']['list'.trim($list['lid'])] = array(
-          '#type' => 'fieldset',
-          '#title' => t($list['name']), 
-          '#collapsible' => TRUE
+  $output = '<div class="mailman_manager">';
+  $output .= '<p>'.t('The following email address will be subscribed to the email lists:').'<br /><strong>'.$account->mail.'</strong></p>';
+
+  $output .= '<p>'.t('If you would like to have a different email address subscribed, change your email address in the account settings tab.').'</p>';
+  $lists = _mailman_manager_get_lists();
+
+  $form['mman'] = array('#type' => 'markup', '#value' => $output);
+  if (count($lists) == 0) {
+    $output = t('There are no lists available for subscription.');
+  }
+  else {
+    $status = 0;
+    foreach ($lists as $list) {
+      $form['mman']['list'.trim($list['lid'])] = array(
+        '#type' => 'fieldset',
+        '#title' => t($list['name']),
+        '#collapsible' => TRUE
+        );
+
+      $subscrip = _mailman_manager_get_subscriptions($account->uid, $list['lid']);
+      if ($subscrip['lstatus'] == 0) {
+        $options = array( '2' => t('Subscribe for digest (receive emails in a bundle)'),
+                          '3' => t('Subscribe for all Mail (normal delivery)'));
+        $status++;
+      }
+      else {
+        $options = array('0' => t('Unsubscribe'),
+                          '1' => t('No mail (temporarily disable delivery)'),
+                          '2' => t('Subscribe for digest (receive emails in a bundle)'),
+                          '3' => t('Subscribe for all Mail (normal delivery)'),
+                          '4' => t('Mail password'));
+      }
+      $subscrip = _mailman_manager_get_subscriptions($account->uid, $list['lid']);
+      $form['mman']['list'. trim($list['lid'])]['options'. trim($list['lid'])] = array(
+        '#type' => 'radios',
+        '#title' => t('Change your subscription:'),
+        '#options' => $options,
+        '#default_value' => $subscrip['lstatus']
+        );
+      if ($subscrip['lstatus'] == 0) {
+        $form['mman']['list'.trim($list['lid'])]['pass'.trim($list['lid'])] = array('#type' => 'textfield',
+          '#title' => t('Password for %listname (optional)', array('%listname' => $list['name'])),
+          '#size' => 15,
+          '#required' => FALSE,
+          '#default_value' => t($subscrip['lpass'])
           );
-        
-        $subscrip = _mailman_manager_get_subscriptions($account->uid, $list['lid']);
-        if ($subscrip['lstatus'] == 0) {
-          $options = array( '2' => t('Subscribe for digest (receive emails in a bundle)'),
-                            '3' => t('Subscribe for all Mail (normal delivery)'));
-          $status++;
-        } 
-        else {
-          $options = array('0' => t('Unsubscribe'),
-                           '1' => t('No mail (temporarily disable delivery)'),
-                           '2' => t('Subscribe for digest (receive emails in a bundle)'),
-                           '3' => t('Subscribe for all Mail (normal delivery)'),
-                           '4' => t('Mail password'));
+      }
+      if ($list['web'] || $list['webarch']) {
+        $link_output = '<p>'.t('Visit').': ';
+        if ($list['web']) {
+          $link_output .= l(t('Mailman Interface'), $list['web']);
         }
-        $subscrip = _mailman_manager_get_subscriptions($account->uid, $list['lid']);
-        $form['mman']['list'.trim($list['lid'])]['options'.trim($list['lid'])] = array(
-          '#type' => 'radios',
-          '#title' => t('Change your subscription:'),
-          '#options' => $options,
-          '#default_value' => $subscrip['lstatus']
-          );
-        if ($subscrip['lstatus'] == 0) {
-          $form['mman']['list'.trim($list['lid'])]['pass'.trim($list['lid'])] = array('#type' => 'textfield',
-            '#title' => t('Password for !listname (optional)', array('!listname' => $list['name'])),
-            '#size' => 15,
-            '#required' => FALSE,
-            '#default_value' => t($subscrip['lpass'])
-            );
+        if ($list['web'] && $list['webarch']) {
+          $link_output .= ' '.t('or').': ';
         }
-        if ($list['web'] || $list['webarch']) {
-          $link_output = '<p>'.t('Visit:').' ';
-          if ($list['web']) {
-            $link_output .= l(t('Mailman Interface'), $list['web']);
-          }
-          if ($list['web'] && $list['webarch']) {
-            $link_output .= ' '.t('or:').' ';
-          }
-          if ($list['webarch']) {
-            $link_output .= l(t('%listname archive.', array('%listname' => $list['name'])), $list['webarch']);
-          }
-          $form['mman']['list'.trim($list['lid'])]['links'] = array('#type' => 'markup', '#value' => $link_output);
+        if ($list['webarch']) {
+          $link_output .= l($list['name'].' '.t('archive').'.', $list['webarch']);
         }
+        $form['mman']['list'.trim($list['lid'])]['links'] = array('#type' => 'markup', '#value' => $link_output);
       }
     }
-    if ($status != 0) {
-      $output2 = '<p>'. t('Your current email address is not subscribed to %status list(s).', array('%status' => $status)) .'</p>';
-    } 
-    else {
-      $output2 = '<p>'. t('Your current email address is currently subscribed to all lists.') .'</p>';
-    }
-    $output2 .= '</div>';
-    $form['lists']['subinfo'] = array( '#type' => 'markup', '#value' => $output2 );
-    $form['lists']['oldemail'] = array(
-                                        '#type' => 'hidden',
-                                        '#default_value' => $subscrip['lmail']
-                                      );
-    $form['lists']['newemail'] = array(
-                                        '#type' => 'hidden',
-                                        '#default_value' => $account->mail
-                                      );
-    return $form;
-  
+  }
+  if ($status != 0) {
+    $output2 = '<p>'. t('Your current email address is not subscribed to %status list(s).', array('%status' => $status)) .'</p>';
+  }
+  else {
+    $output2 = '<p>'. t('Your current email address is currently subscribed to all lists.') .'</p>';
+  }
+  $output2 .= '</div>';
+  $form['lists']['subinfo'] = array( '#type' => 'markup', '#value' => $output2 );
+  $form['lists']['oldemail'] = array(
+                                      '#type' => 'hidden',
+                                      '#default_value' => $subscrip['lmail']
+                                    );
+  $form['lists']['newemail'] = array(
+                                      '#type' => 'hidden',
+                                      '#default_value' => $account->mail
+                                    );
+  return $form;
+
 }
 
 /**
@@ -216,21 +215,21 @@ function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
     if ($category=='mailman_manager'){
       $lists = _mailman_manager_get_lists();
       foreach ($lists as $list) {
-	    $subscrip=_mailman_manager_get_subscriptions($account->uid,$list[lid]);
-	    $listno='options'.trim($list[lid]);
+      $subscrip=_mailman_manager_get_subscriptions($account->uid,$list[lid]);
+      $listno='options'.trim($list[lid]);
         $query = "SELECT * FROM {mailman_users} WHERE uid = %d AND lid = %d";
         $result = db_query($query,$account->uid,$list[lid]);
         $subscrip = db_fetch_array($result);
         if ( $edit['pass'.trim($list[lid])] == '' ) {
             $password = $subscrip[lpass];
-		} else {
+    } else {
             $password = $edit['pass'.trim($list[lid])];
-		}
+    }
         $edit['pass'.trim($list[lid])] = ''; // See http://api.drupal.org/api/4.7/function/hook_user
-	    if ($subscrip[lstatus] != $edit[$listno]) {
-	      _mailman_manager_update_subscriptions($account->uid,$list[lid],$edit[$listno],
-		    $subscrip[lstatus],$account->mail,$password);   
-	    }
+      if ($subscrip[lstatus] != $edit[$listno]) {
+        _mailman_manager_update_subscriptions($account->uid,$list[lid],$edit[$listno],
+        $subscrip[lstatus],$account->mail,$password);   
+      }
       }
     return t('Your mailing list subscriptions have been updated');  
     }
@@ -428,8 +427,8 @@ function _mailman_manager_admin_display() {
   $output = '';
   
   $headers = array(
-                    array('field'=>'lid'), 
-                    array('data'=> t('Name'), 'field' => 'name', 'sort' => 'asc'),
+                    array('data'=> t('ID'), 'field'=>'lid', 'sort' => 'asc'), 
+                    array('data'=> t('Name'), 'field' => 'name'),
                     array('data' => t('Request Address'), 'field' => 'command'),
                  );
   
@@ -440,9 +439,12 @@ function _mailman_manager_admin_display() {
   $num_per_page = 15;
   $result = pager_query($query, $num_per_page);
   $lists = array();
-  while($list = db_fetch_object($result)) {
-    $list->edit = l(t('Edit'), 'admin/settings/mailman_manager/edit/' . $list->lid);
-    $list->delete = l(t('Delete'), 'admin/settings/mailman_manager/delete/' . $list->lid);
+  while($list = db_fetch_array ($result)) {
+    unset($list['web']);
+    unset($list['webarch']);    
+    unset($list['admin']);    
+    $list['edit'] = l(t('Edit'), 'admin/settings/mailman_manager/edit/' . $list['lid']);
+    $list['delete'] = l(t('Delete'), 'admin/settings/mailman_manager/delete/' . $list['lid']);
     $lists[] = $list;
       }           
 
@@ -480,7 +482,7 @@ function mailman_manager_edit_lists_form($lists) {
  * Return array of objects of current mailing lists.
  */
 function _mailman_manager_get_lists() {
-  $result = db_query("SELECT * FROM {mailman_lists} ORDER BY name");
+  $result = db_query("SELECT * FROM {mailman_lists}");
   $lists = array();
   while ($list = db_fetch_array($result)){
     $lists[]=$list;
@@ -527,7 +529,7 @@ function _mailman_manager_update_subscriptions($uid, $lid, $lstatus, $oldstatus,
   // Unsubscribe selected;
   case 0:
     $command = "unsubscribe ".$password." address=".$mail;
-    _mailman_manager_setdelivery($uid, $lid, $mail, $command);	
+    _mailman_manager_setdelivery($uid, $lid, $mail, $command);  
     $watchdog = t('User %uid unsubscribed from list %lid', array('%lid'=>$lid, '%uid' => $uid));
     watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
   break;
@@ -537,51 +539,51 @@ function _mailman_manager_update_subscriptions($uid, $lid, $lstatus, $oldstatus,
   case 1:
     $command = "set authenticate ".$password." address=".$mail."\n";
     $command .= "set delivery off"; 
-    _mailman_manager_setdelivery($uid, $lid, $mail, $command);	
+    _mailman_manager_setdelivery($uid, $lid, $mail, $command);  
     $watchdog = t('Subscription to list %lid for user %uid changed to no mail', array('%lid'=>$lid, '%uid' => $uid));
     watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
   break;
-	
+  
   //Digest selected;
   case 2: 
-	if ($oldstatus == 0) {
-	  _mailman_manager_subscribe($uid, $lid, $mail, 'digest', $password);
-	} else {
+  if ($oldstatus == 0) {
+    _mailman_manager_subscribe($uid, $lid, $mail, 'digest', $password);
+  } else {
       $command = "set authenticate ".$password." address=".$mail."\n";
       $command .= "set delivery on\n"; 
       $command .= "set digest plain"; 
-      _mailman_manager_setdelivery($uid,$lid,$mail,$command);	
+      _mailman_manager_setdelivery($uid,$lid,$mail,$command);  
       $watchdog = t('Subscription to list %lid for user %uid changed to digest', array('%lid'=>$lid, '%uid' => $uid));
       watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-    } 	 
-  break;	   
+    }    
+  break;     
 
   //All mail selected;
   case 3: 
-	if ($oldstatus == 0) {
-	  _mailman_manager_subscribe($uid, $lid, $mail, 'nodigest', $password);
-	} else {
+  if ($oldstatus == 0) {
+    _mailman_manager_subscribe($uid, $lid, $mail, 'nodigest', $password);
+  } else {
       $command = "set authenticate ".$password." address=".$mail."\n";
       $command .= "set delivery on\n"; 
       $command .= "set digest off"; 
-	  _mailman_manager_setdelivery($uid, $lid, $mail,$command);
+    _mailman_manager_setdelivery($uid, $lid, $mail,$command);
       $watchdog = t('Subscription to list %lid for user %uid changed to all mail', array('%lid'=>$lid, '%uid' => $uid));
       watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-	}
+  }
   break;
-	
+  
   //mail pwd selected;
   case 4: 
-	if ($oldstatus == 0) {
+  if ($oldstatus == 0) {
         return;
-	} else {
+  } else {
       $command = "password address=".$mail."\n";
-	  _mailman_manager_setdelivery($uid, $lid, $mail, $command);
+    _mailman_manager_setdelivery($uid, $lid, $mail, $command);
       $watchdog = t('Password for list %lid for user %uid sent by mail', array('%lid'=>$lid, '%uid' => $uid));
       watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-	}
+  }
   break;
-	
+  
   }
   return;
 }
@@ -611,11 +613,11 @@ function _mailman_manager_subscribe($uid, $lid, $mail, $digest, $password){
   $query = "UPDATE {mailman_users} SET lmail = '%s', lpass = '%s' WHERE uid = %d AND lid = %d";
   if (db_query($query,$mail,$password,$uid,$lid) && $mailsuccess){
     $watchdog = t('New subscription to list %lid for user %uid completed successfully.', array('%lid'=>$lid, '%uid' => $uid));
-	watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
+  watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
   } else {
     $watchdog = t('New subscription to list %lid for user %uid failed.', array('%lid'=>$lid, '%uid' => $uid));
-	watchdog('mailman man', $watchdog, 'WATCHDOG_ERROR', NULL);
-  }	  
+  watchdog('mailman man', $watchdog, 'WATCHDOG_ERROR', NULL);
+  }    
   return; 
 }
 
