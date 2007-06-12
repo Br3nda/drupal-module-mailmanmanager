@@ -1,5 +1,5 @@
 <?php
-// $Id: mailman_manager.module,v 1.24 2007/06/12 11:35:40 arturoramos Exp $
+// $Id: mailman_manager.module,v 1.25 2007/06/12 11:46:15 arturoramos Exp $
 /**
  * @file
  * Allows users to subscribe to Mailman mailing lists via a form in
@@ -605,7 +605,7 @@ function _mailman_manager_subscribe($uid, $lid, $mail, $digest, $password){
 
   // If the adminaddress was given, use BCC
   if ( $adminaddress != "" ) {
-     $headers = array('Bcc: '.$adminaddress);
+     $headers = array('Bcc' => $adminaddress);
   } else {
      $headers = array(NULL);
   }
@@ -633,7 +633,7 @@ function _mailman_manager_setdelivery($uid, $lid, $mail, $command) {
 
   // If the adminaddress was given, use BCC
   if ( $adminaddress != "" ) {
-     $headers = array('Bcc: '.$adminaddress);
+    $headers = array('Bcc' => $adminaddress);
   } else {
      $headers = array(NULL);
   }
