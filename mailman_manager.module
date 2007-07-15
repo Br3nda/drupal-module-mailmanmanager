@@ -1,5 +1,5 @@
 <?php
-// $Id: mailman_manager.module,v 1.27 2007/07/15 08:33:22 taniwha Exp $
+// $Id: mailman_manager.module,v 1.28 2007/07/15 08:36:14 taniwha Exp $
 /**
  * @file
  * Allows users to subscribe to Mailman mailing lists via a form in
@@ -184,7 +184,10 @@ function _mailman_manager_user_form(&$account) {
     $output2 = '<p>'. t('Your current email address is currently subscribed to all lists.') .'</p>';
   }
   $output2 .= '</div>';
-  $form['lists']['subinfo'] = array( '#type' => 'markup', '#value' => $output2 );
+  $form['lists']['subinfo'] = array(
+                                    '#type' => 'markup', 
+                                    '#value' => $output2
+                                   );
   $form['lists']['oldemail'] = array(
                                      '#type' => 'hidden',
                                      '#default_value' => $subscrip['lmail']
@@ -226,16 +229,16 @@ function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
           break;
   //Update and process list subscriptions;
         case 'update':
-          if ($category=='mailman_manager'){
+          if ($category == 'mailman_manager') {
             $lists = _mailman_manager_get_lists();
             foreach ($lists as $list) {
-              $subscrip=_mailman_manager_get_subscriptions($account->uid,$list[lid]);
-              $listno='options'.trim($list[lid]);
+              $subscrip = _mailman_manager_get_subscriptions($account->uid, $list['lid']);
+              $listno = 'options'. trim($list['lid']);
               $query = "SELECT * FROM {mailman_users} WHERE uid = %d AND lid = %d";
-              $result = db_query($query,$account->uid,$list[lid]);
+              $result = db_query($query, $account->uid, $list['lid']);
               $subscrip = db_fetch_array($result);
-              if ( $edit['pass'.trim($list[lid])] == '' ) {
-                $password = $subscrip[lpass];
+              if ($edit['pass'. trim($list['lid'])] == '') {
+                $password = $subscrip['lpass'];
               } 
               else {
                 $password = $edit['pass'. trim($list['lid'])];
