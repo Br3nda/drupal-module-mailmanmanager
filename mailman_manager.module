@@ -1,5 +1,5 @@
 <?php
-// $Id: mailman_manager.module,v 1.25 2007/06/12 11:46:15 arturoramos Exp $
+// $Id: mailman_manager.module,v 1.26 2007/07/15 08:12:22 taniwha Exp $
 /**
  * @file
  * Allows users to subscribe to Mailman mailing lists via a form in
@@ -55,7 +55,7 @@ function mailman_manager_menu($may_cache) {
 
   if ($may_cache) {
     $items[] = array('path' => 'mailman_manager',
-                     'title' => ('Mailing Lists'),
+                     'title' => t('Mailing Lists'),
                      'callback' => 'mailman_manager_page',
                      'access' => user_access('access mailman_manager'),
                      'type' => MENU_NORMAL_ITEM);
@@ -86,6 +86,17 @@ function mailman_manager_menu($may_cache) {
                      'callback' => 'mailman_manager_admin_delete',
                      'type' => MENU_CALLBACK);
   }
+  else {
+    //register a menu item for each list
+    foreach (_mailman_manager_get_lists() as $list) {
+      $items[] = array('path' => 'mailman_manager',
+                     'title' => t($list['name']),
+                     'callback' => 'mailman_manager_page',
+                     'access' => user_access('access mailman_manager'),
+                     'type' => MENU_NORMAL_ITEM);
+    }
+    
+  }
   return $items;
 }
 
@@ -94,7 +105,7 @@ function mailman_manager_menu($may_cache) {
  */
 function mailman_manager_page() {
   if (!user_access('access mailman_manager')) {
-    print theme('page', t('You must be an authorized member to subscribe to mailing lists'));
+    return t('You must be an authorized member to subscribe to mailing lists');
   }
   else {
     global $user;
@@ -125,7 +136,7 @@ function _mailman_manager_user_form(&$account) {
 
       $subscrip = _mailman_manager_get_subscriptions($account->uid, $list['lid']);
       if ($subscrip['lstatus'] == 0) {
-        $options = array( '2' => t('Subscribe for digest (receive emails in a bundle)'),
+        $options = array('2' => t('Subscribe for digest (receive emails in a bundle)'),
                           '3' => t('Subscribe for all Mail (normal delivery)'));
         $status++;
       }
@@ -194,6 +205,10 @@ function _mailman_manager_user_form(&$account) {
 * when he logs in.
 */
 function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
+  //we're only interested in our category
+  if ($category != 'mailman_manager') {
+    return;
+  }
   switch ($op) {
   //Create menu option on user tab;
     case 'categories':
@@ -206,10 +221,9 @@ function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
 
   //List mailing lists with user subscriptions and options;
     case 'form':
-      if ($category == 'mailman_manager' && user_access('access mailman_manager')) {
-        return _mailman_manager_user_form($account);
-      }
-    break;
+      
+      return _mailman_manager_user_form($account) ; 
+      break;
   //Update and process list subscriptions;
     case 'update':
     if ($category=='mailman_manager'){
@@ -243,7 +257,7 @@ function mailman_manager_admin() {
   if (!user_access('administer mailman_manager')) {
     return '';
   }
-  print theme('page', _mailman_manager_admin_display());
+  return _mailman_manager_admin_display();
 }
 
 function mailman_manager_admin_edit($id) {
@@ -454,6 +468,7 @@ function _mailman_manager_admin_display() {
   $output .= l(t('Add new mailing list'), 'admin/settings/mailman_manager/add');
 
   return $output;  
+  
 }
 
 function mailman_manager_edit_lists_form($lists) {
@@ -509,8 +524,9 @@ function _mailman_manager_get_subscriptions($uid,$lid) {
       'lid' => $lid,
       'lstatus' => 0
     );
-  } else {
-        $subscrip =db_fetch_array($result);
+  } 
+  else {
+        $subscrip = db_fetch_array($result);
   }
   return $subscrip;
 }
@@ -520,70 +536,73 @@ function _mailman_manager_get_subscriptions($uid,$lid) {
  */
 function _mailman_manager_update_subscriptions($uid, $lid, $lstatus, $oldstatus, $mail, $password) {
     // Do not update status for 'mail password':
-    if ( $lstatus != 4 ) {
-        $query = "UPDATE {mailman_users} SET lstatus = %d WHERE uid = %d AND lid = %d";
-        db_query($query,$lstatus,$uid,$lid);
-    }
+  if ($lstatus != 4) {
+    $query = "UPDATE {mailman_users} SET lstatus = %d WHERE uid = %d AND lid = %d";
+    db_query($query, $lstatus, $uid, $lid);
+  }
   switch ($lstatus) {
-
-  // Unsubscribe selected;
-  case 0:
-    $command = "unsubscribe ".$password." address=".$mail;
-    _mailman_manager_setdelivery($uid, $lid, $mail, $command);  
-    $watchdog = t('User %uid unsubscribed from list %lid', array('%lid'=>$lid, '%uid' => $uid));
-    watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-  break;
     
-
-  // No email selected;
-  case 1:
-    $command = "set authenticate ".$password." address=".$mail."\n";
-    $command .= "set delivery off"; 
+  // Unsubscribe selected;
+    case 0:
+      $command = 'unsubscribe '. $password .' address='. $mail;
     _mailman_manager_setdelivery($uid, $lid, $mail, $command);  
-    $watchdog = t('Subscription to list %lid for user %uid changed to no mail', array('%lid'=>$lid, '%uid' => $uid));
+    $watchdog = t('User %uid unsubscribed from list %lid', array('%lid' => $lid, '%uid' => $uid));
     watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-  break;
-  
+    break;
+    
+    
+  // No email selected;
+    case 1:
+      $command = 'set authenticate '. $password .' address='. $mail ."\n";
+      $command .= 'set delivery off'; 
+      _mailman_manager_setdelivery($uid, $lid, $mail, $command);  
+      $watchdog = t('Subscription to list %lid for user %uid changed to no mail', array('%lid' => $lid, '%uid' => $uid));
+      watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
+    break;
+    
   //Digest selected;
-  case 2: 
-  if ($oldstatus == 0) {
-    _mailman_manager_subscribe($uid, $lid, $mail, 'digest', $password);
-  } else {
-      $command = "set authenticate ".$password." address=".$mail."\n";
-      $command .= "set delivery on\n"; 
-      $command .= "set digest plain"; 
-      _mailman_manager_setdelivery($uid,$lid,$mail,$command);  
-      $watchdog = t('Subscription to list %lid for user %uid changed to digest', array('%lid'=>$lid, '%uid' => $uid));
-      watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-    }    
-  break;     
-
+    case 2: 
+      if ($oldstatus == 0) {
+        _mailman_manager_subscribe($uid, $lid, $mail, 'digest', $password);
+      } 
+      else {
+        $command = 'set authenticate '. $password .' address='. $mail ."\n";
+        $command .= "set delivery on\n"; 
+        $command .= "set digest plain"; 
+        _mailman_manager_setdelivery($uid, $lid, $mail, $command);  
+        $watchdog = t('Subscription to list %lid for user %uid changed to digest', array('%lid' = >$lid, '%uid' => $uid));
+        watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
+      }    
+    break;     
+    
   //All mail selected;
-  case 3: 
-  if ($oldstatus == 0) {
-    _mailman_manager_subscribe($uid, $lid, $mail, 'nodigest', $password);
-  } else {
-      $command = "set authenticate ".$password." address=".$mail."\n";
-      $command .= "set delivery on\n"; 
-      $command .= "set digest off"; 
-    _mailman_manager_setdelivery($uid, $lid, $mail,$command);
-      $watchdog = t('Subscription to list %lid for user %uid changed to all mail', array('%lid'=>$lid, '%uid' => $uid));
-      watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-  }
-  break;
-  
+    case 3: 
+      if ($oldstatus == 0) {
+        _mailman_manager_subscribe($uid, $lid, $mail, 'nodigest', $password);
+      } 
+      else {
+        $command = 'set authenticate '. $password .' address='. $mail ."\n";
+        $command .= "set delivery on\n"; 
+        $command .= "set digest off"; 
+        _mailman_manager_setdelivery($uid, $lid, $mail, $command);
+        $watchdog = t('Subscription to list %lid for user %uid changed to all mail', array('%lid' => $lid, '%uid' => $uid));
+        watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
+      }
+    break;
+    
   //mail pwd selected;
-  case 4: 
-  if ($oldstatus == 0) {
+    case 4: 
+      if ($oldstatus == 0) {
         return;
-  } else {
-      $command = "password address=".$mail."\n";
-    _mailman_manager_setdelivery($uid, $lid, $mail, $command);
-      $watchdog = t('Password for list %lid for user %uid sent by mail', array('%lid'=>$lid, '%uid' => $uid));
-      watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-  }
-  break;
-  
+      } 
+      else {
+        $command = 'password address='. $mail ."\n";
+        _mailman_manager_setdelivery($uid, $lid, $mail, $command);
+        $watchdog = t('Password for list %lid for user %uid sent by mail', array('%lid' => $lid, '%uid' => $uid));
+        watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
+      }
+    break;
+    
   }
   return;
 }
@@ -591,31 +610,33 @@ function _mailman_manager_update_subscriptions($uid, $lid, $lstatus, $oldstatus,
 /**
  * Create a new subscription by sending request email to Mailman.
  */
-function _mailman_manager_subscribe($uid, $lid, $mail, $digest, $password){
-  $query = "SELECT * FROM {mailman_lists} WHERE lid = %d";
-  $result = db_query($query,$lid);
+function _mailman_manager_subscribe($uid, $lid, $mail, $digest, $password) {
+  $query = 'SELECT * FROM {mailman_lists} WHERE lid = %d';
+  $result = db_query($query, $lid);
   $list = db_fetch_array($result);
-  $commandaddress = $list[command];
-  $adminaddress = $list[admin];
-  if ( $password == "" ) {
+  $commandaddress = $list['command'];
+  $adminaddress = $list['admin'];
+  if ($password == "") {
       $password = _mailman_manager_rand_str(5);
-      $password .= trim($uid).substr($mail,0,1);
+      $password .= trim($uid) . substr($mail, 0, 1);
   }
-  $command = "subscribe ".$password." ".$digest." address=".trim($mail);
+  $command = 'subscribe '. $password .' '. $digest .' address='. trim($mail);
 
   // If the adminaddress was given, use BCC
-  if ( $adminaddress != "" ) {
+  if ($adminaddress != "") {
      $headers = array('Bcc' => $adminaddress);
-  } else {
+  } 
+  else {
      $headers = array(NULL);
   }
-  $mailsuccess = drupal_mail ('mailman-manager', $commandaddress, '', $command, variable_get('site_mail', ini_get('sendmail_from')), $headers);
+  $mailsuccess = drupal_mail('mailman-manager', $commandaddress, '', $command, variable_get('site_mail', ini_get('sendmail_from')), $headers);
   $query = "UPDATE {mailman_users} SET lmail = '%s', lpass = '%s' WHERE uid = %d AND lid = %d";
-  if (db_query($query,$mail,$password,$uid,$lid) && $mailsuccess){
-    $watchdog = t('New subscription to list %lid for user %uid completed successfully.', array('%lid'=>$lid, '%uid' => $uid));
+  if (db_query($query, $mail, $password, $uid, $lid) && $mailsuccess) {
+    $watchdog = t('New subscription to list %lid for user %uid completed successfully.', array('%lid' => $lid, '%uid' => $uid));
   watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-  } else {
-    $watchdog = t('New subscription to list %lid for user %uid failed.', array('%lid'=>$lid, '%uid' => $uid));
+  } 
+  else {
+    $watchdog = t('New subscription to list %lid for user %uid failed.', array('%lid' => $lid, '%uid' => $uid));
   watchdog('mailman man', $watchdog, 'WATCHDOG_ERROR', NULL);
   }    
   return; 
@@ -623,23 +644,25 @@ function _mailman_manager_subscribe($uid, $lid, $mail, $digest, $password){
 
 /**
  * Update settings for a subscription by sending request email to Mailman.
- */
+*/  return $output;
+
 function _mailman_manager_setdelivery($uid, $lid, $mail, $command) {
   $query = "SELECT * FROM {mailman_lists} WHERE lid = %d";
   $result = db_query($query, $lid);
   $list = db_fetch_array($result);
-  $commandaddress = $list[command];
-  $adminaddress = $list[admin];
+  $commandaddress = $list['command'];
+  $adminaddress = $list['admin'];
 
   // If the adminaddress was given, use BCC
-  if ( $adminaddress != "" ) {
+  if ($adminaddress != '') {
     $headers = array('Bcc' => $adminaddress);
-  } else {
+  } 
+  else {
      $headers = array(NULL);
   }
   $watchdog = t('Mail command sent to Mailman to: %commandaddress. Command: %command', array('%commandaddress' => $commandaddress, '%command' => $command));
   watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-  drupal_mail ('mailman-manager', $commandaddress, '', $command, variable_get('site_mail', ini_get('sendmail_from')), $headers);
+  drupal_mail('mailman-manager', $commandaddress, '', $command, variable_get('site_mail', ini_get('sendmail_from')), $headers);
   return; 
 }
 
@@ -648,8 +671,8 @@ function _mailman_manager_setdelivery($uid, $lid, $mail, $command) {
  */
 function _mailman_manager_rand_str($size) {
    $feed = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-   for ($i=0; $i < $size; $i++) {
-       $rand_str .= substr($feed, rand(0, strlen($feed)-1), 1);
+   for ($i = 0; $i < $size; $i++) {
+       $rand_str .= substr($feed, rand(0, strlen($feed) - 1), 1);
    }
    return $rand_str;
 }
