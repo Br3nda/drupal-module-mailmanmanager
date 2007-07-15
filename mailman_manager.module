@@ -1,5 +1,5 @@
 <?php
-// $Id: mailman_manager.module,v 1.28 2007/07/15 08:36:14 taniwha Exp $
+// $Id: mailman_manager.module,v 1.29 2007/07/15 08:57:51 taniwha Exp $
 /**
  * @file
  * Allows users to subscribe to Mailman mailing lists via a form in
@@ -62,38 +62,39 @@ function mailman_manager_menu($may_cache) {
     
     $items[] = array('path' => 'admin/settings/mailman_manager',
                      'title' => t('Mailing Lists'),
-                                  'access' => user_access('administer mailman_manager'),
-                                      'description' => t('Allow users to subscribe and change their subscriptions to Mailman mailing lists.'),
-                                          'callback' => 'mailman_manager_admin',
-                                          'type' => MENU_NORMAL_ITEM);
+                      'access' => user_access('administer mailman_manager'),
+                          'description' => t('Allow users to subscribe and change their subscriptions to Mailman mailing lists.'),
+                              'callback' => 'mailman_manager_admin',
+                              'type' => MENU_NORMAL_ITEM);
     
     $items[] = array('path' => 'admin/settings/mailman_manager/add',
                      'title' => t('Add New'),
-                                  'access' => user_access('administer mailman_manager'),
-                                      'description' => t('Add new Mailman mailing lists.'),
-                                          'callback' => 'mailman_manager_admin_add',
-                                          'type' => MENU_NORMAL_ITEM);
+                    'access' => user_access('administer mailman_manager'),
+                    'description' => t('Add new Mailman mailing lists.'),
+                    'callback' => 'mailman_manager_admin_add',
+                    'type' => MENU_NORMAL_ITEM);
     $items[] = array('path' => 'admin/settings/mailman_manager/edit',
                      'title' => t('Edit Mailing list'),
-                                  'access' => user_access('administer mailman_manager'),
-                                      'description' => t('Add new Mailman mailing lists.'),
-                                          'callback' => 'mailman_manager_admin_edit',
-                                          'type' => MENU__CALLBACK);
+                      'access' => user_access('administer mailman_manager'),
+                      'description' => t('Add new Mailman mailing lists.'),
+                      'callback' => 'mailman_manager_admin_edit',
+                      'type' => MENU__CALLBACK);
+    
     $items[] = array('path' => 'admin/settings/mailman_manager/delete',
                      'title' => t('Delete Mailing list'),
-                                  'access' => user_access('administer mailman_manager'),
-                                      'description' => t('Add new Mailman mailing lists.'),
-                                          'callback' => 'mailman_manager_admin_delete',
-                                          'type' => MENU_CALLBACK);
+                      'access' => user_access('administer mailman_manager'),
+                      'description' => t('Add new Mailman mailing lists.'),
+                      'callback' => 'mailman_manager_admin_delete',
+                      'type' => MENU_CALLBACK);
   }
   else {
     //register a menu item for each list
         foreach (_mailman_manager_get_lists() as $list) {
       $items[] = array('path' => 'mailman_manager',
                        'title' => t($list['name']),
-                                    'callback' => 'mailman_manager_page',
-                                    'access' => user_access('access mailman_manager'),
-                                        'type' => MENU_NORMAL_ITEM);
+                        'callback' => 'mailman_manager_page',
+                        'access' => user_access('access mailman_manager'),
+                        'type' => MENU_NORMAL_ITEM);
         }
     
   }
@@ -611,58 +612,56 @@ function _mailman_manager_subscribe($uid, $lid, $mail, $digest, $password) {
   $command = 'subscribe '. $password .' '. $digest .' address='. trim($mail);
 
   // If the adminaddress was given, use BCC
-      if ($adminaddress != "") {
+  if ($adminaddress != "") {
     $headers = array('Bcc' => $adminaddress);
-      } 
-      else {
-        $headers = array(NULL);
-      }
-      $mailsuccess = drupal_mail('mailman-manager', $commandaddress, '', $command, variable_get('site_mail', ini_get('sendmail_from')), $headers);
-      $query = "UPDATE {mailman_users} SET lmail = '%s', lpass = '%s' WHERE uid = %d AND lid = %d";
-      if (db_query($query, $mail, $password, $uid, $lid) && $mailsuccess) {
-        $watchdog = t('New subscription to list %lid for user %uid completed successfully.', array('%lid' => $lid, '%uid' => $uid));
-        watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-      } 
-      else {
-        $watchdog = t('New subscription to list %lid for user %uid failed.', array('%lid' => $lid, '%uid' => $uid));
-        watchdog('mailman man', $watchdog, 'WATCHDOG_ERROR', NULL);
-      }    
-      return; 
+  } 
+  else {
+    $headers = array(NULL);
+  }
+  $mailsuccess = drupal_mail('mailman-manager', $commandaddress, '', $command, variable_get('site_mail', ini_get('sendmail_from')), $headers);
+  $query = "UPDATE {mailman_users} SET lmail = '%s', lpass = '%s' WHERE uid = %d AND lid = %d";
+  if (db_query($query, $mail, $password, $uid, $lid) && $mailsuccess) {
+    $watchdog = t('New subscription to list %lid for user %uid completed successfully.', array('%lid' => $lid, '%uid' => $uid));
+    watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
+  } 
+  else {
+    $watchdog = t('New subscription to list %lid for user %uid failed.', array('%lid' => $lid, '%uid' => $uid));
+    watchdog('mailman man', $watchdog, 'WATCHDOG_ERROR', NULL);
+  }    
+  return; 
 }
 
 /**
  * Update settings for a subscription by sending request email to Mailman.
-*/  return $output;
+*/  
+function _mailman_manager_setdelivery($uid, $lid, $mail, $command) {
+  $query = "SELECT * FROM {mailman_lists} WHERE lid = %d";
+  $result = db_query($query, $lid);
+  $list = db_fetch_array($result);
+  $commandaddress = $list['command'];
+  $adminaddress = $list['admin'];
 
-    function _mailman_manager_setdelivery($uid, $lid, $mail, $command) {
-      $query = "SELECT * FROM {mailman_lists} WHERE lid = %d";
-      $result = db_query($query, $lid);
-      $list = db_fetch_array($result);
-      $commandaddress = $list['command'];
-      $adminaddress = $list['admin'];
-
-  // If the adminaddress was given, use BCC
-      if ($adminaddress != '') {
-    $headers = array('Bcc' => $adminaddress);
-      } 
-      else {
-        $headers = array(NULL);
-      }
-      $watchdog = t('Mail command sent to Mailman to: %commandaddress. Command: %command', array('%commandaddress' => $commandaddress, '%command' => $command));
-      watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
-      drupal_mail('mailman-manager', $commandaddress, '', $command, variable_get('site_mail', ini_get('sendmail_from')), $headers);
-      return; 
+// If the adminaddress was given, use BCC
+    if ($adminaddress != '') {
+  $headers = array('Bcc' => $adminaddress);
+    } 
+    else {
+      $headers = array(NULL);
     }
+    $watchdog = t('Mail command sent to Mailman to: %commandaddress. Command: %command', array('%commandaddress' => $commandaddress, '%command' => $command));
+    watchdog('mailman man', $watchdog, 'WATCHDOG_NOTICE', NULL);
+    drupal_mail('mailman-manager', $commandaddress, '', $command, variable_get('site_mail', ini_get('sendmail_from')), $headers);
+    return; 
+}
 
 /**
     * Generation of five character random text string for Mailman password.
- */
-    function _mailman_manager_rand_str($size) {
-      $feed = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-      for ($i = 0; $i < $size; $i++) {
-        $rand_str .= substr($feed, rand(0, strlen($feed) - 1), 1);
-      }
-      return $rand_str;
-    }
-
-    ?>
+*/
+function _mailman_manager_rand_str($size) {
+  $feed = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  for ($i = 0; $i < $size; $i++) {
+    $rand_str .= substr($feed, rand(0, strlen($feed) - 1), 1);
+  }
+  return $rand_str;
+}
+?>
