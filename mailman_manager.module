@@ -1,9 +1,9 @@
 <?php
-// $Id: mailman_manager.module,v 1.29 2007/07/15 08:57:51 taniwha Exp $
+// $Id: mailman_manager.module,v 1.30 2008/02/04 05:28:52 arturoramos Exp $
 /**
  * @file
  * Allows users to subscribe to Mailman mailing lists via a form in
- * their user profile.  List of mailing lists is defined by adminstrator.
+ * their user profile.  List of mailing lists is defined by administrator.
  * Module maintains a list of user subscriptions and passwords.
  * Module sends requests for subscription changes to Mailman request address.
  */
@@ -217,7 +217,7 @@ function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
   //Create menu option on user tab;
         case 'categories':
           $lists = _mailman_manager_get_lists();
-          if (count($lists)) {
+          if (count($lists) && user_access('access mailman_manager')) {
             $output_user[] = array('name' => 'mailman_manager', 'title' => t('Mailing Lists'), 'weight' => 9);
           }
           return $output_user;
