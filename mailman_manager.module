@@ -1,5 +1,5 @@
 <?php
-// $Id: mailman_manager.module,v 1.30 2008/02/04 05:28:52 arturoramos Exp $
+// $Id: mailman_manager.module,v 1.31 2008/02/04 06:15:04 arturoramos Exp $
 /**
  * @file
  * Allows users to subscribe to Mailman mailing lists via a form in
@@ -209,11 +209,7 @@ function _mailman_manager_user_form(&$account) {
 * when he logs in.
 */
 function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
-  //we're only interested in our category
-      if ($category != 'mailman_manager') {
-    return;
-      }
-      switch ($op) {
+  switch ($op) {
   //Create menu option on user tab;
         case 'categories':
           $lists = _mailman_manager_get_lists();
@@ -225,8 +221,9 @@ function mailman_manager_user($op, &$edit, &$account, $category = NULL) {
 
   //List mailing lists with user subscriptions and options;
         case 'form':
-      
-          return _mailman_manager_user_form($account) ; 
+          if ($category == 'mailman_manager') {      
+            return _mailman_manager_user_form($account) ; 
+          }
           break;
   //Update and process list subscriptions;
         case 'update':
