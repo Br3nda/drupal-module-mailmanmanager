@@ -1,5 +1,5 @@
-; $Id: mailman_manager.info,v 1.4 2007/06/18 22:53:49 dww Exp $
+; $Id: mailman_manager.info,v 1.5 2008/12/21 05:51:01 taniwha Exp $
 name = Mailman Manager
 description = "Allows members to subscribe and change their subscriptions to Mailman mailing lists."
 package = MailmanManager
-project = "drupal"
+core = 6.x
